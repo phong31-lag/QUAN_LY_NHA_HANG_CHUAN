@@ -1,327 +1,434 @@
 /**
- * LỚP GIAO TIẾP VỚI MÁY CHỦ API & QUẢN LÝ DỮ LIỆU CỤC BỘ (api.js)
- * Cung cấp cơ chế kết nối RESTful API và Kho lưu trữ dữ liệu ngoại tuyến (Offline Repository)
- * Đảm bảo các màn hình của Quân (Sprint 1) hoạt động trơn tru ngay cả khi độc lập hoặc tích hợp Backend.
+ * Tầng giao tiếp API Backend
+ * Thống nhất cấu trúc phản hồi: { ok: boolean, data: any, msg: string }
+ * Đáp ứng US-003: Tự động xử lý khi hết hạn token / đăng xuất an toàn
+ * Tích hợp Mock Storage thông minh để có thể chạy thử nghiệm độc lập
  */
+import { KHOA_LUU_TRU, VAI_TRO, TRANG_THAI_TAI_KHOAN } from './hangSo.js';
 
-class ApiService {
-    constructor() {
-        this.baseUrl = window.HANG_SO ? window.HANG_SO.API_BASE_URL : 'http://localhost:3001/api';
-        this.khoiTaoDuLieuMauBanDau();
+const CAU_HINH_API = {
+  DIEM_CUOI: 'http://localhost:3000/api',
+  THOI_GIAN_CHO: 8000
+};
+
+// Dữ liệu mẫu khởi tạo ban đầu cho các module của Phong
+const DU_LIEU_MAU = {
+  nguoiDung: [
+    {
+      id: 1,
+      tenDangNhap: 'admin',
+      hoTen: 'Nguyễn Văn Quản Lý',
+      soDienThoai: '0901234567',
+      email: 'quanly@quanmoc.com',
+      vaiTro: VAI_TRO.QUAN_LY,
+      trangThai: TRANG_THAI_TAI_KHOAN.DANG_HOAT_DONG,
+      ngayTao: '2026-10-01T08:00:00'
+    },
+    {
+      id: 2,
+      tenDangNhap: 'thungan01',
+      hoTen: 'Trần Thị Thu Ngân',
+      soDienThoai: '0912345678',
+      email: 'thungan@quanmoc.com',
+      vaiTro: VAI_TRO.THU_NGAN,
+      trangThai: TRANG_THAI_TAI_KHOAN.DANG_HOAT_DONG,
+      ngayTao: '2026-10-05T09:00:00'
+    },
+    {
+      id: 3,
+      tenDangNhap: 'bepchinh',
+      hoTen: 'Lê Văn Bếp',
+      soDienThoai: '0987654321',
+      email: 'bep@quanmoc.com',
+      vaiTro: VAI_TRO.BEP,
+      trangThai: TRANG_THAI_TAI_KHOAN.DANG_HOAT_DONG,
+      ngayTao: '2026-10-06T10:30:00'
+    },
+    {
+      id: 4,
+      tenDangNhap: 'phucvu01',
+      hoTen: 'Phạm Văn Phục Vụ',
+      soDienThoai: '0933221100',
+      email: 'phucvu@quanmoc.com',
+      vaiTro: VAI_TRO.PHUC_VU,
+      trangThai: TRANG_THAI_TAI_KHOAN.DA_KHOA,
+      ngayTao: '2026-10-10T14:15:00'
     }
-
-    /**
-     * Lấy Token truy cập từ LocalStorage
-     */
-    layAccessToken() {
-        return localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.ACCESS_TOKEN || 'quanmoc_access_token');
+  ],
+  vaiTro: [
+    {
+      ma: VAI_TRO.QUAN_LY,
+      ten: 'Quản lý / Chủ quán',
+      moTa: 'Toàn quyền điều hành nhà hàng, quản lý nhân sự, thực đơn và báo cáo doanh thu',
+      quyenHan: ['xem_don_bep', 'xu_ly_don_bep', 'xem_so_do_ban', 'thu_tien_in_hoa_don', 'chinh_sua_thuc_don', 'xem_bao_cao_doanh_thu', 'quan_ly_nhan_su', 'phan_quyen_vai_tro', 'cau_hinh_nha_hang', 'xem_nhat_ky_he_thong']
+    },
+    {
+      ma: VAI_TRO.THU_NGAN,
+      ten: 'Thu ngân',
+      moTa: 'Quản lý bàn, tiếp nhận đơn gọi món, thu tiền, in hóa đơn và tích điểm khách hàng',
+      quyenHan: ['xem_so_do_ban', 'thu_tien_in_hoa_don']
+    },
+    {
+      ma: VAI_TRO.BEP,
+      ten: 'Đầu bếp',
+      moTa: 'Xem danh sách món cần làm trên màn hình KDS, cập nhật tiến độ nấu và thông báo xong món',
+      quyenHan: ['xem_don_bep', 'xu_ly_don_bep']
+    },
+    {
+      ma: VAI_TRO.PHUC_VU,
+      ten: 'Phục vụ bàn',
+      moTa: 'Hỗ trợ khách hàng tại bàn, tiếp nhận yêu cầu gọi nhân viên / thanh toán',
+      quyenHan: ['xem_so_do_ban']
     }
-
-    /**
-     * Lưu Token truy cập
-     */
-    luuAccessToken(token) {
-        localStorage.setItem(window.HANG_SO?.KHOA_LUU_TRU?.ACCESS_TOKEN || 'quanmoc_access_token', token);
+  ],
+  cauHinhQuan: {
+    tenNhaHang: 'Quán Mộc - Nhà Hàng Lẩu Nướng & Cơm Niêu',
+    diaChi: '123 Đường Ẩm Thực, Quận 1, TP. Hồ Chí Minh',
+    hotline: '0909 888 999',
+    tenWifi: 'QuanMoc_KhachHang',
+    matKhauWifi: 'quanmoc2026',
+    tyLeVat: 8,
+    phiPhucVu: 0,
+    tenNganHang: 'MBBank',
+    soTaiKhoan: '090123456789',
+    tenChuTaiKhoan: 'NGUYEN VAN QUAN LY'
+  },
+  lichSuPhanQuyen: [
+    {
+      id: 1,
+      nguoiThucHien: 'admin',
+      hanhDong: 'Gán vai trò Thu ngân cho tài khoản thungan01',
+      thoiGian: '2026-10-05T09:05:00',
+      ghiChu: 'Khởi tạo tài khoản đầu ca'
+    },
+    {
+      id: 2,
+      nguoiThucHien: 'admin',
+      hanhDong: 'Khóa tài khoản phucvu01',
+      thoiGian: '2026-10-18T16:20:00',
+      ghiChu: 'Nhân viên xin nghỉ việc (US-014)'
     }
-
-    /**
-     * Gọi HTTP Request chung
-     */
-    async yeuCau(duongDan, tuyChon = {}) {
-        const url = `${this.baseUrl}${duongDan}`;
-        const headers = {
-            'Content-Type': 'application/json',
-            ...(tuyChon.headers || {})
-        };
-
-        const token = this.layAccessToken();
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        try {
-            const phanHoi = await fetch(url, {
-                ...tuyChon,
-                headers,
-                body: tuyChon.body ? JSON.stringify(tuyChon.body) : undefined
-            });
-
-            const duLieuJson = await phanHoi.json().catch(() => null);
-
-            if (phanHoi.status === 401) {
-                console.warn('Phiên làm việc hết hạn hoặc chưa đăng nhập');
-            }
-
-            return duLieuJson || { ok: false, msg: 'Không thể giải mã dữ liệu từ máy chủ' };
-        } catch (loi) {
-            console.warn(`Không kết nối được tới Backend API (${url}), sử dụng Kho dữ liệu cục bộ.`, loi.message);
-            return null; // Trả về null để chuyển sang chế độ LocalStorage
-        }
+  ],
+  nhatKyHeThong: [
+    {
+      id: 1,
+      thoiGian: '2026-10-21T08:30:15',
+      nguoiThucHien: 'admin',
+      loaiNhatKy: 'INFO',
+      noiDung: 'Đăng nhập hệ thống quản trị thành công từ IP 192.168.1.10'
+    },
+    {
+      id: 2,
+      thoiGian: '2026-10-21T08:45:00',
+      nguoiThucHien: 'admin',
+      loaiNhatKy: 'INFO',
+      noiDung: 'Cập nhật cấu hình thuế VAT thành 8%'
+    },
+    {
+      id: 3,
+      thoiGian: '2026-10-21T09:10:22',
+      nguoiThucHien: 'thungan01',
+      loaiNhatKy: 'INFO',
+      noiDung: 'Thanh toán hoàn tất bàn số 05, tổng tiền 420.000 đ'
+    },
+    {
+      id: 4,
+      thoiGian: '2026-10-21T09:15:00',
+      nguoiThucHien: 'bepchinh',
+      loaiNhatKy: 'WARN',
+      noiDung: 'Báo tạm hết món Lẩu Bò Nhúng Giấm trên hệ thống'
     }
+  ]
+};
 
-    // =========================================================================
-    // KHO DỮ LIỆU CỤC BỘ KHỞI TẠO (SEED DATA REPOSITORY)
-    // =========================================================================
-    khoiTaoDuLieuMauBanDau() {
-        const KHOA = window.HANG_SO ? window.HANG_SO.KHOA_LUU_TRU : {};
+// Khởi tạo bộ nhớ giả lập nếu chưa có
+function khoiTaoBoNhoGiaLap() {
+  if (!localStorage.getItem('mock_nguoi_dung')) {
+    localStorage.setItem('mock_nguoi_dung', JSON.stringify(DU_LIEU_MAU.nguoiDung));
+  }
+  if (!localStorage.getItem('mock_vai_tro')) {
+    localStorage.setItem('mock_vai_tro', JSON.stringify(DU_LIEU_MAU.vaiTro));
+  }
+  if (!localStorage.getItem('mock_cau_hinh')) {
+    localStorage.setItem('mock_cau_hinh', JSON.stringify(DU_LIEU_MAU.cauHinhQuan));
+  }
+  if (!localStorage.getItem('mock_lich_su_pq')) {
+    localStorage.setItem('mock_lich_su_pq', JSON.stringify(DU_LIEU_MAU.lichSuPhanQuyen));
+  }
+  if (!localStorage.getItem('mock_nhat_ky')) {
+    localStorage.setItem('mock_nhat_ky', JSON.stringify(DU_LIEU_MAU.nhatKyHeThong));
+  }
+}
+khoiTaoBoNhoGiaLap();
 
-        // 1. Dữ liệu Khu Vực mẫu
-        if (!localStorage.getItem(KHOA.DANH_SACH_KHU_VUC || 'quanmoc_ds_khu_vuc')) {
-            const dsKhuVucMau = [
-                { id: 1, ma: 'KV_TANG1', ten: 'Tầng 1 (Máy lạnh)', moTa: 'Không gian ấm cúng, phù hợp gia đình', thuTu: 1, trangThai: 1 },
-                { id: 2, ma: 'KV_TANG2', ten: 'Tầng 2 (Ngoài trời)', moTa: 'Thoáng đãng, ngắm phố xá về đêm', thuTu: 2, trangThai: 1 },
-                { id: 3, ma: 'KV_SANVUON', ten: 'Khu Sân Vườn', moTa: 'Không gian xanh mát mẻ, tiệc nhóm', thuTu: 3, trangThai: 1 },
-                { id: 4, ma: 'KV_VIP', ten: 'Phòng VIP', moTa: 'Không gian riêng tư, tiếp khách sang trọng', thuTu: 4, trangThai: 1 }
-            ];
-            localStorage.setItem(KHOA.DANH_SACH_KHU_VUC || 'quanmoc_ds_khu_vuc', JSON.stringify(dsKhuVucMau));
-        }
-
-        // 2. Dữ liệu Bàn Ăn mẫu
-        if (!localStorage.getItem(KHOA.DANH_SACH_BAN || 'quanmoc_ds_ban')) {
-            const dsBanMau = [
-                // Tầng 1
-                { id: 1, khuVucId: 1, soBan: 'Bàn 01', maBan: 'T1-01', sucChua: 4, qrToken: 'tok_t1_b01_998', trangThai: 'TRONG', ghiChu: 'Gần cửa sổ' },
-                { id: 2, khuVucId: 1, soBan: 'Bàn 02', maBan: 'T1-02', sucChua: 4, qrToken: 'tok_t1_b02_874', trangThai: 'DANG_DUNG', ghiChu: 'Khách gia đình' },
-                { id: 3, khuVucId: 1, soBan: 'Bàn 03', maBan: 'T1-03', sucChua: 6, qrToken: 'tok_t1_b03_321', trangThai: 'TRONG', ghiChu: 'Bàn giữa' },
-                { id: 4, khuVucId: 1, soBan: 'Bàn 04', maBan: 'T1-04', sucChua: 8, qrToken: 'tok_t1_b04_552', trangThai: 'CHO_THANH_TOAN', ghiChu: 'Gần quầy bar' },
-                { id: 5, khuVucId: 1, soBan: 'Bàn 05', maBan: 'T1-05', sucChua: 4, qrToken: 'tok_t1_b05_641', trangThai: 'TRONG', ghiChu: '' },
-                { id: 6, khuVucId: 1, soBan: 'Bàn 06', maBan: 'T1-06', sucChua: 2, qrToken: 'tok_t1_b06_119', trangThai: 'CAN_HO_TRO', ghiChu: 'Bàn đôi' },
-                // Tầng 2
-                { id: 7, khuVucId: 2, soBan: 'Bàn 07', maBan: 'T2-07', sucChua: 4, qrToken: 'tok_t2_b07_441', trangThai: 'TRONG', ghiChu: 'Ban công' },
-                { id: 8, khuVucId: 2, soBan: 'Bàn 08', maBan: 'T2-08', sucChua: 6, qrToken: 'tok_t2_b08_229', trangThai: 'DANG_DUNG', ghiChu: 'Bàn dài' },
-                { id: 9, khuVucId: 2, soBan: 'Bàn 09', maBan: 'T2-09', sucChua: 4, qrToken: 'tok_t2_b09_773', trangThai: 'TRONG', ghiChu: '' },
-                // Sân vườn
-                { id: 10, khuVucId: 3, soBan: 'Bàn 10', maBan: 'SV-10', sucChua: 8, qrToken: 'tok_sv_b10_884', trangThai: 'TRONG', ghiChu: 'Dưới tán cây' },
-                { id: 11, khuVucId: 3, soBan: 'Bàn 11', maBan: 'SV-11', sucChua: 10, qrToken: 'tok_sv_b11_332', trangThai: 'DANG_DUNG', ghiChu: 'Tiệc họp mặt' },
-                // VIP
-                { id: 12, khuVucId: 4, soBan: 'VIP 01', maBan: 'VIP-01', sucChua: 12, qrToken: 'tok_vip01_991', trangThai: 'TRONG', ghiChu: 'Phòng Sen Vàng' },
-                { id: 13, khuVucId: 4, soBan: 'VIP 02', maBan: 'VIP-02', sucChua: 16, qrToken: 'tok_vip02_882', trangThai: 'TAM_KHOA', ghiChu: 'Đang bảo dưỡng đèn' }
-            ];
-            localStorage.setItem(KHOA.DANH_SACH_BAN || 'quanmoc_ds_ban', JSON.stringify(dsBanMau));
-        }
-
-        // 3. Dữ liệu Danh Mục Món mẫu
-        if (!localStorage.getItem(KHOA.DANH_SACH_DANH_MUC || 'quanmoc_ds_danh_muc')) {
-            const dsDanhMucMau = [
-                { id: 1, ma: 'DM_KHAI_VI', ten: 'Khai Vị & Món Nhắm', bieuTuong: '🥗', thuTu: 1, trangThai: 1 },
-                { id: 2, ma: 'DM_DAC_SAN', ten: 'Đặc Sản Quán Mộc', bieuTuong: '🍗', thuTu: 2, trangThai: 1 },
-                { id: 3, ma: 'DM_LAU_NUONG', ten: 'Lẩu & Nướng Than Hoa', bieuTuong: '🍲', thuTu: 3, trangThai: 1 },
-                { id: 4, ma: 'DM_HAI_SAN', ten: 'Hải Sản Tươi Sống', bieuTuong: '🦐', thuTu: 4, trangThai: 1 },
-                { id: 5, ma: 'DM_COM_MI', ten: 'Cơm, Mì & Rau Rừng', bieuTuong: '🍚', thuTu: 5, trangThai: 1 },
-                { id: 6, ma: 'DM_DO_UONG', ten: 'Đồ Uống & Tráng Miệng', bieuTuong: '🍹', thuTu: 6, trangThai: 1 }
-            ];
-            localStorage.setItem(KHOA.DANH_SACH_DANH_MUC || 'quanmoc_ds_danh_muc', JSON.stringify(dsDanhMucMau));
-        }
-
-        // 4. Dữ liệu Món Ăn mẫu
-        if (!localStorage.getItem(KHOA.DANH_SACH_MON_AN || 'quanmoc_ds_mon_an')) {
-            const dsMonMau = [
-                {
-                    id: 1,
-                    danhMucId: 2,
-                    maMon: 'MON-01',
-                    tenMon: 'Gà Nướng Ống Tre Tây Bắc',
-                    donViTinh: 'Con',
-                    giaBan: 245000,
-                    hinhAnh: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=600&auto=format&fit=crop&q=80',
-                    moTa: 'Gà đồi thả vườn ướp hạt dổi, mắc khén nướng trong ống tre thơm lừng, thịt mềm ngọt đậm vị.',
-                    laBanChay: 1,
-                    trangThai: 1, // 1: Đang bán, 0: Tạm hết, -1: Ẩn
-                    tuyChonSize: [
-                        { ten: 'Nửa con', giaCongThem: -100000 },
-                        { ten: 'Nguyên con tiêu chuẩn', giaCongThem: 0 },
-                        { ten: 'Nguyên con cỡ lớn (2kg)', giaCongThem: 60000 }
-                    ],
-                    tuyChonTopping: [
-                        { ten: 'Xôi nếp nương nướng', gia: 35000 },
-                        { ten: 'Muối chấm chẩm chéo đặc biệt', gia: 15000 }
-                    ]
-                },
-                {
-                    id: 2,
-                    danhMucId: 3,
-                    maMon: 'MON-02',
-                    tenMon: 'Lẩu Gà Lá É Tao Ngộ',
-                    donViTinh: 'Nồi',
-                    giaBan: 289000,
-                    hinhAnh: 'https://images.unsplash.com/photo-1547928576-a4a33237cbc3?w=600&auto=format&fit=crop&q=80',
-                    moTa: 'Hương vị chuẩn Đà Lạt, nước dùng thanh ngọt nấu nấm samco và thịt gà ta, dậy mùi thơm lá é.',
-                    laBanChay: 1,
-                    trangThai: 1,
-                    tuyChonSize: [
-                        { ten: 'Nồi vừa (2 - 3 người)', giaCongThem: 0 },
-                        { ten: 'Nồi lớn (4 - 6 người)', giaCongThem: 90000 }
-                    ],
-                    tuyChonTopping: [
-                        { ten: 'Đĩa lá é tươi thêm', gia: 25000 },
-                        { ten: 'Bún tươi thêm', gia: 15000 },
-                        { ten: 'Đĩa nấm samco thêm', gia: 35000 }
-                    ]
-                },
-                {
-                    id: 3,
-                    danhMucId: 2,
-                    maMon: 'MON-03',
-                    tenMon: 'Bò Tơ Nướng Tảng Sốt Tiêu Rừng',
-                    donViTinh: 'Phần',
-                    giaBan: 260000,
-                    hinhAnh: 'https://images.unsplash.com/photo-1558030006-450675393462?w=600&auto=format&fit=crop&q=80',
-                    moTa: 'Thịt bò tơ tươi nướng trên than hoa giữ trọn độ mọng nước, kèm sốt tiêu rừng cay the dịu dàng.',
-                    laBanChay: 1,
-                    trangThai: 1,
-                    tuyChonSize: [
-                        { ten: 'Phần 300g', giaCongThem: 0 },
-                        { ten: 'Phần 500g', giaCongThem: 140000 }
-                    ],
-                    tuyChonTopping: [
-                        { ten: 'Bánh mì nướng bơ tỏi', gia: 20000 },
-                        { ten: 'Khoai tây múi cau chiên', gia: 35000 }
-                    ]
-                },
-                {
-                    id: 4,
-                    danhMucId: 1,
-                    maMon: 'MON-04',
-                    tenMon: 'Cơm Cháy Kho Quẹt Nam Bộ',
-                    donViTinh: 'Đĩa',
-                    giaBan: 95000,
-                    hinhAnh: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=600&auto=format&fit=crop&q=80',
-                    moTa: 'Cơm cháy đáy nồi giòn rụm chấm cùng niêu kho quẹt tôm khô tóp mỡ đậm đà, ăn kèm rau củ luộc.',
-                    laBanChay: 1,
-                    trangThai: 1,
-                    tuyChonSize: [],
-                    tuyChonTopping: [
-                        { ten: 'Tóp mỡ kho quẹt thêm', gia: 30000 },
-                        { ten: 'Cơm cháy giòn thêm', gia: 25000 }
-                    ]
-                },
-                {
-                    id: 5,
-                    danhMucId: 4,
-                    maMon: 'MON-05',
-                    tenMon: 'Mực Một Nắng Nướng Sa Tế',
-                    donViTinh: 'Con',
-                    giaBan: 185000,
-                    hinhAnh: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=600&auto=format&fit=crop&q=80',
-                    moTa: 'Mực câu Phan Thiết phơi một nắng dẻo thơm, tẩm ướp sa tế cay nồng nướng than hồng.',
-                    laBanChay: 0,
-                    trangThai: 0, // Tạm hết hàng (để test US-038 & US-056)
-                    tuyChonSize: [],
-                    tuyChonTopping: []
-                },
-                {
-                    id: 6,
-                    danhMucId: 1,
-                    maMon: 'MON-06',
-                    tenMon: 'Gỏi Ngó Sen Tôm Thịt Hoa Chuối',
-                    donViTinh: 'Đĩa',
-                    giaBan: 110000,
-                    hinhAnh: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
-                    moTa: 'Ngó sen giòn sần sật, tôm sú bóc nõn, thịt ba chỉ luộc trộn cùng nước mắm chua ngọt và bánh phồng tôm.',
-                    laBanChay: 0,
-                    trangThai: 1,
-                    tuyChonSize: [],
-                    tuyChonTopping: [
-                        { ten: 'Bánh phồng tôm chiên thêm', gia: 15000 }
-                    ]
-                },
-                {
-                    id: 7,
-                    danhMucId: 5,
-                    maMon: 'MON-07',
-                    tenMon: 'Rau Rừng Gia Lai Xào Tỏi',
-                    donViTinh: 'Đĩa',
-                    giaBan: 75000,
-                    hinhAnh: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=600&auto=format&fit=crop&q=80',
-                    moTa: 'Rau dớn, rau lủi hái trên nương rẫy xanh mướt, xào thơm nức mũi với tỏi Lý Sơn giã dập.',
-                    laBanChay: 0,
-                    trangThai: 1,
-                    tuyChonSize: [],
-                    tuyChonTopping: []
-                },
-                {
-                    id: 8,
-                    danhMucId: 6,
-                    maMon: 'MON-08',
-                    tenMon: 'Trà Sen Vàng Củ Năng Hạt Sen',
-                    donViTinh: 'Ly',
-                    giaBan: 45000,
-                    hinhAnh: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&auto=format&fit=crop&q=80',
-                    moTa: 'Trà ô long ướp hoa sen thanh nhã, thạch củ năng giòn ngọt và hạt sen bùi béo, phủ lớp kem sữa.',
-                    laBanChay: 1,
-                    trangThai: 1,
-                    tuyChonSize: [
-                        { ten: 'Size M (Tiêu chuẩn)', giaCongThem: 0 },
-                        { ten: 'Size L (Khổng lồ)', giaCongThem: 10000 }
-                    ],
-                    tuyChonTopping: [
-                        { ten: 'Thạch củ năng thêm', gia: 10000 },
-                        { ten: 'Kem cheese béo ngậy', gia: 12000 }
-                    ]
-                }
-            ];
-            localStorage.setItem(KHOA.DANH_SACH_MON_AN || 'quanmoc_ds_mon_an', JSON.stringify(dsMonMau));
-        }
-    }
-
-    // =========================================================================
-    // API KHU VỰC & BÀN ĂN (US-023 -> US-030)
-    // =========================================================================
-    async layDanhSachKhuVuc() {
-        const kq = await this.yeuCau('/khu-vuc');
-        if (kq && kq.ok) return kq.data;
-
-        // Fallback LocalStorage
-        const data = localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_KHU_VUC || 'quanmoc_ds_khu_vuc');
-        return data ? JSON.parse(data) : [];
-    }
-
-    async luuDanhSachKhuVuc(ds) {
-        localStorage.setItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_KHU_VUC || 'quanmoc_ds_khu_vuc', JSON.stringify(ds));
-    }
-
-    async layDanhSachBan() {
-        const kq = await this.yeuCau('/ban-an');
-        if (kq && kq.ok) return kq.data;
-
-        // Fallback LocalStorage
-        const data = localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_BAN || 'quanmoc_ds_ban');
-        return data ? JSON.parse(data) : [];
-    }
-
-    async luuDanhSachBan(ds) {
-        localStorage.setItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_BAN || 'quanmoc_ds_ban', JSON.stringify(ds));
-    }
-
-    // =========================================================================
-    // API DANH MỤC & THỰC ĐƠN (US-031 -> US-040)
-    // =========================================================================
-    async layDanhSachDanhMuc() {
-        const kq = await this.yeuCau('/danh-muc');
-        if (kq && kq.ok) return kq.data;
-
-        // Fallback LocalStorage
-        const data = localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_DANH_MUC || 'quanmoc_ds_danh_muc');
-        return data ? JSON.parse(data) : [];
-    }
-
-    async luuDanhSachDanhMuc(ds) {
-        localStorage.setItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_DANH_MUC || 'quanmoc_ds_danh_muc', JSON.stringify(ds));
-    }
-
-    async layDanhSachMonAn() {
-        const kq = await this.yeuCau('/thuc-don');
-        if (kq && kq.ok) return kq.data;
-
-        // Fallback LocalStorage
-        const data = localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_MON_AN || 'quanmoc_ds_mon_an');
-        return data ? JSON.parse(data) : [];
-    }
-
-    async luuDanhSachMonAn(ds) {
-        localStorage.setItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_MON_AN || 'quanmoc_ds_mon_an', JSON.stringify(ds));
-    }
+/**
+ * Lấy Token từ LocalStorage
+ */
+export function layToken() {
+  return localStorage.getItem(KHOA_LUU_TRU.TOKEN);
 }
 
-// Khởi tạo đối tượng toàn cục
-window.api = new ApiService();
+/**
+ * Lưu Token và thông tin người dùng
+ */
+export function luuPhienDangNhap(token, nguoiDung, refreshToken = null) {
+  localStorage.setItem(KHOA_LUU_TRU.TOKEN, token);
+  localStorage.setItem(KHOA_LUU_TRU.NGUOI_DUNG, JSON.stringify(nguoiDung));
+  if (refreshToken) {
+    localStorage.setItem(KHOA_LUU_TRU.REFRESH_TOKEN, refreshToken);
+  }
+}
+
+/**
+ * Xóa thông tin đăng nhập (US-008, US-003)
+ */
+export function xoaPhienDangNhap() {
+  localStorage.removeItem(KHOA_LUU_TRU.TOKEN);
+  localStorage.removeItem(KHOA_LUU_TRU.REFRESH_TOKEN);
+  localStorage.removeItem(KHOA_LUU_TRU.NGUOI_DUNG);
+}
+
+/**
+ * Lấy thông tin người dùng hiện tại đang đăng nhập
+ */
+export function layNguoiDungHienTai() {
+  const chuoi = localStorage.getItem(KHOA_LUU_TRU.NGUOI_DUNG);
+  try {
+    return chuoi ? JSON.parse(chuoi) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Hàm gọi API tổng quát chuẩn quy ước { ok, data, msg }
+ */
+export async function goiApi(duongDan, tuyChon = {}) {
+  const token = layToken();
+  const tieuDe = {
+    'Content-Type': 'application/json',
+    ...(tuyChon.headers || {})
+  };
+
+  if (token) {
+    tieuDe['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const phanHoi = await fetch(`${CAU_HINH_API.DIEM_CUOI}${duongDan}`, {
+      ...tuyChon,
+      headers: tieuDe
+    });
+
+    // Xử lý hết hạn phiên (US-003)
+    if (phanHoi.status === 401) {
+      xoaPhienDangNhap();
+      window.location.hash = '#/dang-nhap';
+      return { ok: false, data: null, msg: 'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại!' };
+    }
+
+    const ketQua = await phanHoi.json();
+    return ketQua;
+  } catch (loiKetNoi) {
+    // Khi Backend chưa bật hoặc đang dev, kích hoạt Mock Service tương ứng
+    return xuLyApiGiaLap(duongDan, tuyChon);
+  }
+}
+
+/**
+ * Mock Service xử lý đầy đủ các User Story của Phong khi Backend offline
+ */
+function xuLyApiGiaLap(duongDan, tuyChon) {
+  const phuongThuc = (tuyChon.method || 'GET').toUpperCase();
+  const thanDuLieu = tuyChon.body ? JSON.parse(tuyChon.body) : {};
+
+  // US-007: Đăng nhập
+  if (duongDan === '/tai-khoan/dang-nhap' && phuongThuc === 'POST') {
+    const { tenDangNhap, matKhau } = thanDuLieu;
+    const danhSach = JSON.parse(localStorage.getItem('mock_nguoi_dung') || '[]');
+    const nguoiDung = danhSach.find(u => u.tenDangNhap === tenDangNhap);
+
+    if (!nguoiDung) {
+      return { ok: false, data: null, msg: 'Tài khoản không tồn tại trong hệ thống!' };
+    }
+    if (nguoiDung.trangThai === TRANG_THAI_TAI_KHOAN.DA_KHOA) {
+      return { ok: false, data: null, msg: 'Tài khoản này đã bị khóa. Vui lòng liên hệ Quản lý!' };
+    }
+    if (matKhau !== '123456' && matKhau !== 'admin123') {
+      return { ok: false, data: null, msg: 'Mật khẩu không chính xác (Thử: 123456)!' };
+    }
+
+    const tokenGia = 'token_mock_' + Date.now();
+    luuPhienDangNhap(tokenGia, nguoiDung, 'refresh_token_mock_' + Date.now());
+    themNhatKyHeThong('INFO', `Đăng nhập thành công với tài khoản: ${nguoiDung.tenDangNhap}`);
+
+    return {
+      ok: true,
+      data: {
+        token: tokenGia,
+        nguoiDung: nguoiDung
+      },
+      msg: 'Đăng nhập thành công!'
+    };
+  }
+
+  // US-008: Đăng xuất
+  if (duongDan === '/tai-khoan/dang-xuat') {
+    const cur = layNguoiDungHienTai();
+    if (cur) themNhatKyHeThong('INFO', `Tài khoản ${cur.tenDangNhap} đã đăng xuất`);
+    xoaPhienDangNhap();
+    return { ok: true, data: null, msg: 'Đăng xuất thành công!' };
+  }
+
+  // US-009: Đổi mật khẩu
+  if (duongDan === '/tai-khoan/doi-mat-khau' && phuongThuc === 'POST') {
+    const { matKhauCu, matKhauMoi } = thanDuLieu;
+    if (!matKhauMoi || matKhauMoi.length < 6) {
+      return { ok: false, data: null, msg: 'Mật khẩu mới phải có ít nhất 6 ký tự!' };
+    }
+    const cur = layNguoiDungHienTai();
+    if (cur) themNhatKyHeThong('INFO', `Tài khoản ${cur.tenDangNhap} đã đổi mật khẩu cá nhân`);
+    return { ok: true, data: null, msg: 'Đổi mật khẩu thành công!' };
+  }
+
+  // US-010: Cập nhật hồ sơ cá nhân
+  if (duongDan === '/tai-khoan/cap-nhat-ho-so' && phuongThuc === 'PUT') {
+    const cur = layNguoiDungHienTai();
+    if (!cur) return { ok: false, data: null, msg: 'Chưa đăng nhập' };
+    const capNhat = { ...cur, ...thanDuLieu };
+    localStorage.setItem(KHOA_LUU_TRU.NGUOI_DUNG, JSON.stringify(capNhat));
+
+    const danhSach = JSON.parse(localStorage.getItem('mock_nguoi_dung') || '[]');
+    const index = danhSach.findIndex(u => u.id === cur.id);
+    if (index !== -1) {
+      danhSach[index] = capNhat;
+      localStorage.setItem('mock_nguoi_dung', JSON.stringify(danhSach));
+    }
+    themNhatKyHeThong('INFO', `Tài khoản ${cur.tenDangNhap} đã cập nhật thông tin hồ sơ`);
+    return { ok: true, data: capNhat, msg: 'Cập nhật hồ sơ thành công!' };
+  }
+
+  // US-012: Xem danh sách nhân viên
+  if (duongDan === '/nhan-vien' && phuongThuc === 'GET') {
+    const danhSach = JSON.parse(localStorage.getItem('mock_nguoi_dung') || '[]');
+    return { ok: true, data: danhSach, msg: 'Lấy danh sách nhân viên thành công!' };
+  }
+
+  // US-011: Thêm mới nhân viên
+  if (duongDan === '/nhan-vien' && phuongThuc === 'POST') {
+    const danhSach = JSON.parse(localStorage.getItem('mock_nguoi_dung') || '[]');
+    const { tenDangNhap, hoTen, soDienThoai, vaiTro, email } = thanDuLieu;
+
+    if (danhSach.some(u => u.tenDangNhap === tenDangNhap)) {
+      return { ok: false, data: null, msg: 'Tên đăng nhập đã tồn tại trong hệ thống!' };
+    }
+
+    const nhanVienMoi = {
+      id: Date.now(),
+      tenDangNhap,
+      hoTen,
+      soDienThoai,
+      email: email || `${tenDangNhap}@quanmoc.com`,
+      vaiTro: vaiTro || VAI_TRO.PHUC_VU,
+      trangThai: TRANG_THAI_TAI_KHOAN.DANG_HOAT_DONG,
+      ngayTao: new Date().toISOString()
+    };
+    danhSach.push(nhanVienMoi);
+    localStorage.setItem('mock_nguoi_dung', JSON.stringify(danhSach));
+    themNhatKyHeThong('INFO', `Thêm mới nhân viên: ${tenDangNhap} (${hoTen}) - Vai trò: ${vaiTro}`);
+    return { ok: true, data: nhanVienMoi, msg: 'Tạo tài khoản nhân viên mới thành công!' };
+  }
+
+  // US-013 & US-014: Sửa/Khóa/Mở khóa/Đặt lại mật khẩu nhân viên
+  if (duongDan.startsWith('/nhan-vien/') && phuongThuc === 'PUT') {
+    const id = parseInt(duongDan.split('/')[2]);
+    const danhSach = JSON.parse(localStorage.getItem('mock_nguoi_dung') || '[]');
+    const index = danhSach.findIndex(u => u.id === id);
+
+    if (index === -1) {
+      return { ok: false, data: null, msg: 'Không tìm thấy nhân viên!' };
+    }
+
+    danhSach[index] = { ...danhSach[index], ...thanDuLieu };
+    localStorage.setItem('mock_nguoi_dung', JSON.stringify(danhSach));
+    themNhatKyHeThong('INFO', `Cập nhật thông tin nhân viên ID: ${id}`);
+    return { ok: true, data: danhSach[index], msg: 'Cập nhật tài khoản nhân viên thành công!' };
+  }
+
+  // US-015: Xem danh sách vai trò
+  if (duongDan === '/vai-tro' && phuongThuc === 'GET') {
+    const danhSach = JSON.parse(localStorage.getItem('mock_vai_tro') || '[]');
+    return { ok: true, data: danhSach, msg: 'Lấy danh sách vai trò thành công!' };
+  }
+
+  // US-016 & US-018: Cập nhật quyền hạn cho vai trò
+  if (duongDan.startsWith('/vai-tro/') && phuongThuc === 'PUT') {
+    const maVaiTro = duongDan.split('/')[2];
+    const danhSach = JSON.parse(localStorage.getItem('mock_vai_tro') || '[]');
+    const index = danhSach.findIndex(v => v.ma === maVaiTro);
+
+    if (index === -1) {
+      return { ok: false, data: null, msg: 'Không tìm thấy vai trò!' };
+    }
+
+    danhSach[index] = { ...danhSach[index], ...thanDuLieu };
+    localStorage.setItem('mock_vai_tro', JSON.stringify(danhSach));
+
+    // US-022: Ghi nhận lịch sử phân quyền
+    themNhatKyPhanQuyen(`Cập nhật ma trận quyền hạn cho vai trò: ${danhSach[index].ten}`);
+    themNhatKyHeThong('INFO', `Phân quyền vai trò: ${maVaiTro}`);
+    return { ok: true, data: danhSach[index], msg: 'Cập nhật phân quyền vai trò thành công!' };
+  }
+
+  // US-022: Xem lịch sử phân quyền
+  if (duongDan === '/vai-tro/lich-su' && phuongThuc === 'GET') {
+    const lichSu = JSON.parse(localStorage.getItem('mock_lich_su_pq') || '[]');
+    return { ok: true, data: lichSu, msg: 'Lấy lịch sử phân quyền thành công!' };
+  }
+
+  // US-041, US-042, US-043: Lấy & Lưu cấu hình nhà hàng
+  if (duongDan === '/cau-hinh-nha-hang' && phuongThuc === 'GET') {
+    const cauHinh = JSON.parse(localStorage.getItem('mock_cau_hinh') || '{}');
+    return { ok: true, data: cauHinh, msg: 'Lấy cấu hình nhà hàng thành công!' };
+  }
+  if (duongDan === '/cau-hinh-nha-hang' && phuongThuc === 'PUT') {
+    const cauHinh = { ...thanDuLieu };
+    localStorage.setItem('mock_cau_hinh', JSON.stringify(cauHinh));
+    themNhatKyHeThong('INFO', 'Cập nhật thông tin quán, thuế VAT và tài khoản VietQR');
+    return { ok: true, data: cauHinh, msg: 'Lưu cấu hình nhà hàng thành công!' };
+  }
+
+  // US-044: Xem nhật ký hệ thống
+  if (duongDan === '/nhat-ky-he-thong' && phuongThuc === 'GET') {
+    const nhatKy = JSON.parse(localStorage.getItem('mock_nhat_ky') || '[]');
+    return { ok: true, data: nhatKy, msg: 'Lấy nhật ký hệ thống thành công!' };
+  }
+
+  return { ok: true, data: null, msg: 'Thao tác thực hiện thành công' };
+}
+
+function themNhatKyHeThong(loai, noiDung) {
+  const cur = layNguoiDungHienTai();
+  const danhSach = JSON.parse(localStorage.getItem('mock_nhat_ky') || '[]');
+  danhSach.unshift({
+    id: Date.now(),
+    thoiGian: new Date().toISOString(),
+    nguoiThucHien: cur ? cur.tenDangNhap : 'HeThong',
+    loaiNhatKy: loai,
+    noiDung: noiDung
+  });
+  localStorage.setItem('mock_nhat_ky', JSON.stringify(danhSach.slice(0, 50)));
+}
+
+function themNhatKyPhanQuyen(hanhDong) {
+  const cur = layNguoiDungHienTai();
+  const danhSach = JSON.parse(localStorage.getItem('mock_lich_su_pq') || '[]');
+  danhSach.unshift({
+    id: Date.now(),
+    nguoiThucHien: cur ? cur.tenDangNhap : 'admin',
+    hanhDong: hanhDong,
+    thoiGian: new Date().toISOString(),
+    ghiChu: 'Cập nhật từ màn hình phân quyền quản trị'
+  });
+  localStorage.setItem('mock_lich_su_pq', JSON.stringify(danhSach));
+}

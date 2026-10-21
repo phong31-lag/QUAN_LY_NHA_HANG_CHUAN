@@ -1,0 +1,160 @@
+================================================================================
+DỰ ÁN: HỆ THỐNG QUẢN LÝ NHÀ HÀNG & GỌI MÓN QR (QUÁN MỘC - QUANMOC.COM)
+BÁO CÁO TIẾN ĐỘ CÔNG VIỆC CÁ NHÂN - SPRINT 1 (TUẦN 1)
+================================================================================
+
+THÔNG TIN THÀNH VIÊN:
+- Họ và tên: Phong
+- Vai trò: Frontend Developer (Phụ trách Admin Core, Xác thực & Cấu hình nền tảng)
+- Hạn hoàn thành: 19/10/2026
+- Trạng thái: 100% Hoàn thành (22/22 User Stories)
+- Phạm vi phụ trách: US-003, US-004, US-007 đến US-022, US-041 đến US-044
+
+
+1. MỤC TIÊU SPRINT 1:
+- Dựng khung giao diện Quản trị (Admin Layout) chuẩn Responsive cho Mobile, Tablet và Desktop.
+- Cấu hình Single Page Application (SPA Router) có bộ bảo vệ Route Guard chặn truy cập trái phép khi chưa đăng nhập (US-004) và cơ chế tự động xử lý khi hết hạn token (US-003).
+- Phân luồng hiển thị menu điều hướng theo đúng quyền hạn (Role-based Navigation):
+  + Tài khoản Bếp: Chỉ truy cập màn hình Điều phối Bếp KDS (US-019).
+  + Tài khoản Thu ngân: Chỉ truy cập Sơ đồ bàn & Thu tiền POS (US-020).
+  + Tài khoản Quản lý: Toàn quyền truy cập Quản trị nhân sự, Vai trò, Cấu hình quán và System Logs (US-021).
+- Xây dựng giao diện Xác thực: Đăng nhập (US-007), Đăng xuất an toàn (US-008), Hồ sơ cá nhân (US-010), Đổi mật khẩu cá nhân (US-009).
+- Xây dựng module Quản trị Nhân sự: Tạo mới tài khoản (US-011), Xem danh sách & tìm kiếm thời gian thực (US-012), Cập nhật thông tin & đặt lại mật khẩu mặc định (US-013), Khóa/mở khóa tài khoản nhân viên nghỉ việc (US-014).
+- Xây dựng module Vai trò & Phân quyền: Xem danh sách vai trò (US-015, US-016), Gán vai trò (US-017), Ma trận phân quyền checkbox chi tiết (US-018), Ghi nhận lịch sử phân quyền (US-022).
+- Xây dựng module Cấu hình Quán: Thông tin quán (US-041), Thuế VAT và phí phục vụ (US-042), Tài khoản ngân hàng VietQR tạo mã động NAPAS 247 (US-043), Tra cứu nhật ký hệ thống System Logs (US-044).
+
+
+2. BẢNG CHI TIẾT KẾT QUẢ THEO USER STORIES (100% HOÀN THÀNH):
+
+[US-003] Tự động đăng xuất hoặc làm mới token khi hết hạn phiên:
+- Tệp tin: api.js, boDinhTuyen.js
+- Kết quả: Bắt mã lỗi HTTP 401 khi token hết hạn, hiển thị thông báo toast và điều hướng về trang đăng nhập.
+
+[US-004] Chặn truy cập trái phép vào route quản trị qua Route Guard:
+- Tệp tin: boDinhTuyen.js
+- Kết quả: Chặn truy cập vào mọi route quản trị khi chưa có token hợp lệ.
+
+[US-007] Đăng nhập hệ thống bằng tài khoản nhân viên / quản lý:
+- Tệp tin: dangNhap.js
+- Kết quả: Form đăng nhập chuẩn UX, validate dữ liệu đầu vào, toggle ẩn/hiện mật khẩu, tích hợp sẵn các nút chọn tài khoản mẫu (admin, thungan01, bepchinh / mật khẩu 123456) phục vụ nghiệm thu nhanh.
+
+[US-008] Đăng xuất khỏi thiết bị đang sử dụng:
+- Tệp tin: dangNhap.js, khungQuanTri.js
+- Kết quả: Nút đăng xuất có modal xác nhận an toàn, xóa sạch session và token trong LocalStorage.
+
+[US-009] Đổi mật khẩu cá nhân:
+- Tệp tin: hoSoCaNhan.js
+- Kết quả: Form đổi mật khẩu cá nhân có kiểm tra độ dài tối thiểu 6 ký tự và kiểm tra khớp mật khẩu mới.
+
+[US-010] Xem và cập nhật thông tin hồ sơ cá nhân:
+- Tệp tin: hoSoCaNhan.js
+- Kết quả: Hiển thị thẻ thông tin cá nhân và cho phép cập nhật họ tên, số điện thoại, email ngay trên giao diện.
+
+[US-011] Quản lý tạo mới tài khoản cho nhân viên:
+- Tệp tin: quanLyNhanVien.js
+- Kết quả: Modal thêm mới nhân viên đầy đủ thông tin: Tên đăng nhập, họ tên, số điện thoại, chọn vai trò ban đầu.
+
+[US-012] Quản lý xem danh sách và tìm kiếm hồ sơ nhân viên:
+- Tệp tin: quanLyNhanVien.js
+- Kết quả: Bảng nhân sự kèm thanh tìm kiếm thời gian thực theo tên/username/sđt và bộ lọc theo vai trò, trạng thái làm việc.
+
+[US-013] Cập nhật thông tin hoặc đặt lại mật khẩu cho nhân viên:
+- Tệp tin: quanLyNhanVien.js
+- Kết quả: Chỉnh sửa thông tin nhân sự; nút reset mật khẩu về mặc định (123456) khi nhân viên quên mật khẩu.
+
+[US-014] Khóa / Mở khóa tài khoản nhân viên đã nghỉ việc:
+- Tệp tin: quanLyNhanVien.js
+- Kết quả: Nút khóa tài khoản nhanh (trạng thái DA_KHOA) có modal xác nhận, bảo đảm giữ nguyên vẹn khóa ngoại và lịch sử hóa đơn cũ.
+
+[US-015 & US-016] Xem danh sách và mô tả các vai trò nhà hàng:
+- Tệp tin: vaiTroVaQuyen.js
+- Kết quả: Hiển thị 4 vai trò chính (Quản lý, Thu ngân, Bếp, Phục vụ) cùng số lượng quyền hạn tương ứng.
+
+[US-017] Gán vai trò cụ thể cho từng tài khoản nhân viên:
+- Tệp tin: quanLyNhanVien.js
+- Kết quả: Lựa chọn vai trò khi tạo mới hoặc cập nhật hồ sơ nhân sự.
+
+[US-018] Cấu hình quyền truy cập chức năng chi tiết cho từng vai trò:
+- Tệp tin: vaiTroVaQuyen.js
+- Kết quả: Ma trận phân quyền checkbox chia theo 4 nhóm: Bếp KDS, Thu ngân POS, Thực đơn & Doanh thu, Quản trị hệ thống. Cho phép tùy chỉnh quyền và bấm Lưu.
+
+[US-019] Kiểm soát quyền tài khoản Bếp:
+- Tệp tin: boDinhTuyen.js, khungQuanTri.js
+- Kết quả: Tài khoản Bếp chỉ nhìn thấy menu Bếp, cố tình truy cập link quản trị sẽ bị chặn và cảnh báo.
+
+[US-020] Kiểm soát quyền tài khoản Thu ngân:
+- Tệp tin: boDinhTuyen.js, khungQuanTri.js
+- Kết quả: Tài khoản Thu ngân chỉ nhìn thấy Sơ đồ bàn & Thu ngân, bị hạn chế vào các trang cấu hình & nhân sự.
+
+[US-021] Kiểm soát quyền Quản lý:
+- Tệp tin: boDinhTuyen.js, khungQuanTri.js
+- Kết quả: Tài khoản Quản lý được phân quyền toàn diện vào mọi chức năng của hệ thống.
+
+[US-022] Ghi nhận lịch sử thay đổi quyền hạn nhân sự:
+- Tệp tin: lichSuPhanQuyen.js
+- Kết quả: Bảng tra cứu lịch sử ghi nhận ai thực hiện, quyền gì thay đổi, thời gian và ghi chú tự động.
+
+[US-041] Cấu hình thông tin chung của nhà hàng:
+- Tệp tin: cauHinhNhaHang.js
+- Kết quả: Form cập nhật Tên quán, Địa chỉ, Hotline, Tên và Mật khẩu Wifi quán.
+
+[US-042] Cấu hình thuế VAT và phí phục vụ mặc định:
+- Tệp tin: cauHinhNhaHang.js
+- Kết quả: Cấu hình tỷ lệ phần trăm thuế VAT (8%) và phí phục vụ mặc định.
+
+[US-043] Cấu hình thông tin tài khoản ngân hàng nhận VietQR:
+- Tệp tin: cauHinhNhaHang.js
+- Kết quả: Cấu hình Tên ngân hàng, Số tài khoản, Chủ tài khoản kèm ảnh preview mã VietQR NAPAS 247 sinh động.
+
+[US-044] Tra cứu nhật ký hoạt động hệ thống (System Logs):
+- Tệp tin: nhatKyHeThong.js
+- Kết quả: Bảng tra cứu System Logs kèm bộ lọc theo cấp độ (INFO/WARN/ERROR) và ô tìm kiếm nội dung log.
+
+
+3. KIẾN TRÚC MÃ NGUỒN ĐÃ XÂY DỰNG:
+frontend/
+├── index.html                   [Điểm nạp ứng dụng SPA]
+├── ungDung.js                   [Khởi chạy ứng dụng và kích hoạt Router]
+├── tepGiaoDien.css              [Bảng kiểu Design System hoàn chỉnh]
+├── dungChung/
+│   ├── hangSo.js                [Định nghĩa vai trò, quyền hạn RBAC, đường dẫn]
+│   ├── dinhDang.js              [Hàm format tiền VND, ngày giờ, huy hiệu trạng thái]
+│   └── api.js                   [Tầng gọi API chuẩn {ok, data, msg} & Mock Storage]
+├── dinhTuyen/
+│   └── boDinhTuyen.js           [Bộ định tuyến SPA, Route Guard, phân quyền Role]
+├── thanhPhan/
+│   ├── khungQuanTri.js          [Admin Layout: Header & Sidebar động theo quyền]
+│   ├── thongBao.js              [Toast thông báo trạng thái]
+│   └── hopThoai.js              [Modal popup xác nhận hành động]
+└── trang/
+    ├── dangNhap/dangNhap.js     [Màn hình Đăng nhập US-007, US-008]
+    ├── taiKhoan/hoSoCaNhan.js   [Màn hình Hồ sơ cá nhân US-010 và Đổi mật khẩu US-009]
+    ├── nhanVien/quanLyNhanVien.js [Màn hình Quản lý nhân viên US-011 -> US-014]
+    └── quanTri/
+        ├── vaiTroVaQuyen.js     [Màn hình Vai trò & Ma trận phân quyền US-015 -> US-018]
+        ├── lichSuPhanQuyen.js   [Màn hình Lịch sử thay đổi quyền hạn US-022]
+        ├── cauHinhNhaHang.js    [Màn hình Cấu hình quán & VietQR US-041 -> US-043]
+        └── nhatKyHeThong.js     [Màn hình Tra cứu System Logs US-044]
+
+
+4. KẾT QUẢ KIỂM THỬ THỰC TẾ (10 TEST CASES ĐỀU ĐẠT):
+- TC-01: Chặn truy cập khi chưa đăng nhập (Route Guard) -> ĐẠT (PASS)
+- TC-02: Đăng nhập thành công với tài khoản quản lý 'admin' -> ĐẠT (PASS)
+- TC-03: Đăng nhập thất bại khi sai mật khẩu -> ĐẠT (PASS)
+- TC-04: Phân quyền tài khoản Bếp 'bepchinh' (chỉ vào KDS) -> ĐẠT (PASS)
+- TC-05: Phân quyền tài khoản Thu ngân 'thungan01' (chỉ vào bàn/POS) -> ĐẠT (PASS)
+- TC-06: Thêm mới tài khoản nhân viên 'thungan02' -> ĐẠT (PASS)
+- TC-07: Tìm kiếm và lọc danh sách nhân viên theo thời gian thực -> ĐẠT (PASS)
+- TC-08: Khóa tài khoản nhân viên nghỉ việc (status DA_KHOA) -> ĐẠT (PASS)
+- TC-09: Điều chỉnh ma trận phân quyền checkbox & lưu lịch sử -> ĐẠT (PASS)
+- TC-10: Cấu hình thông tin quán, thuế VAT và tạo mã VietQR -> ĐẠT (PASS)
+
+
+5. KẾ HOẠCH CHO SPRINT 2:
+- Đấu nối API xác thực JWT thật từ server backend Express khi Nhật hoàn thành.
+- Xây dựng giao diện Màn hình Điều phối Bếp (KDS) nhận đơn món theo thời gian thực qua Socket.io.
+- Xây dựng Dashboard Báo cáo Doanh thu và phân tích kinh doanh với biểu đồ trực quan.
+
+TP. Hồ Chí Minh, ngày 19 tháng 10 năm 2026
+Người làm báo cáo:
+Phong

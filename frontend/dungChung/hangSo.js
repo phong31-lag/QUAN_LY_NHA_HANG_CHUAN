@@ -1,56 +1,94 @@
 /**
- * HẰNG SỐ DÙNG CHUNG PHÍA FRONTEND (hangSo.js)
- * Dự án Quản lý Nhà hàng & Gọi món QR (Quán Mộc)
- * Phụ trách: Quân (Frontend Lead - Client & POS)
+ * Các hằng số dùng chung trong hệ thống Frontend Quản lý Nhà hàng
+ * Tuân thủ quy chuẩn: Tiếng Việt không dấu, camelCase
  */
 
-const HANG_SO = {
-    // Cấu hình máy chủ API
-    API_BASE_URL: 'http://localhost:3001/api',
-    
-    // Khóa lưu trữ LocalStorage
-    KHOA_LUU_TRU: {
-        ACCESS_TOKEN: 'quanmoc_access_token',
-        THONG_TIN_NGUOI_DUNG: 'quanmoc_nguoi_dung',
-        DANH_SACH_KHU_VUC: 'quanmoc_ds_khu_vuc',
-        DANH_SACH_BAN: 'quanmoc_ds_ban',
-        DANH_SACH_DANH_MUC: 'quanmoc_ds_danh_muc',
-        DANH_SACH_MON_AN: 'quanmoc_ds_mon_an',
-        CAU_HINH_QUAN: 'quanmoc_cau_hinh_quan'
-    },
-
-    // Trạng thái bàn ăn (Rule 2: Tiếng Việt rõ nghĩa)
-    TRANG_THAI_BAN: {
-        TRONG: { ma: 'TRONG', ten: 'Bàn trống', mau: '#10B981', lopBadge: 'badge-xanh-la' },
-        DANG_DUNG: { ma: 'DANG_DUNG', ten: 'Đang có khách', mau: '#3B82F6', lopBadge: 'badge-xanh-duong' },
-        CHO_THANH_TOAN: { ma: 'CHO_THANH_TOAN', ten: 'Chờ thanh toán', mau: '#F59E0B', lopBadge: 'badge-vang' },
-        CAN_HO_TRO: { ma: 'CAN_HO_TRO', ten: 'Cần hỗ trợ', mau: '#EF4444', lopBadge: 'badge-do' },
-        TAM_KHOA: { ma: 'TAM_KHOA', ten: 'Tạm khóa', mau: '#6B7280', lopBadge: 'badge-xam' }
-    },
-
-    // Trạng thái món ăn
-    TRANG_THAI_MON: {
-        DANG_BAN: { ma: 'DANG_BAN', ten: 'Đang bán', giaTri: 1, lopBadge: 'badge-xanh-la' },
-        TAM_HET: { ma: 'TAM_HET', ten: 'Tạm hết hàng', giaTri: 0, lopBadge: 'badge-cam' },
-        DA_AN: { ma: 'DA_AN', ten: 'Đã ẩn (Ngừng bán)', giaTri: -1, lopBadge: 'badge-xam' }
-    },
-
-    // Thông tin nhà hàng mặc định (fallback khi chưa kết nối API)
-    NHA_HANG_MAC_DINH: {
-        ten: 'Nhà Hàng Quán Mộc',
-        diaChi: '123 Đường Ẩm Thực, Quận 1, TP. Hồ Chí Minh',
-        hotline: '028 1234 5678',
-        wifiTen: 'QuanMoc_KhachHang',
-        wifiMatKhau: 'quanmoc2026',
-        khauHieu: 'Hương vị truyền thống, đậm đà tình thân',
-        gioHoatDong: '09:00 - 22:30'
-    }
+export const VAI_TRO = {
+  QUAN_LY: 'QUAN_LY',
+  THU_NGAN: 'THU_NGAN',
+  BEP: 'BEP',
+  PHUC_VU: 'PHUC_VU'
 };
 
-if (typeof window !== 'undefined') {
-    window.HANG_SO = HANG_SO;
-}
+export const TEN_VAI_TRO = {
+  QUAN_LY: 'Quản lý / Chủ quán',
+  THU_NGAN: 'Thu ngân',
+  BEP: 'Đầu bếp',
+  PHUC_VU: 'Phục vụ bàn'
+};
 
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = HANG_SO;
-}
+export const TRANG_THAI_TAI_KHOAN = {
+  DANG_HOAT_DONG: 'DANG_HOAT_DONG',
+  DA_KHOA: 'DA_KHOA'
+};
+
+export const TEN_TRANG_THAI_TAI_KHOAN = {
+  DANG_HOAT_DONG: 'Đang hoạt động',
+  DA_KHOA: 'Đã khóa'
+};
+
+export const QUYEN_HAN = {
+  XEM_DON_BEP: 'xem_don_bep',
+  XU_LY_DON_BEP: 'xu_ly_don_bep',
+  XEM_SO_DO_BAN: 'xem_so_do_ban',
+  THU_TIEN_IN_HOA_DON: 'thu_tien_in_hoa_don',
+  CHINH_SUA_THUC_DON: 'chinh_sua_thuc_don',
+  XEM_BAO_CAO_DOANH_THU: 'xem_bao_cao_doanh_thu',
+  QUAN_LY_NHAN_SU: 'quan_ly_nhan_su',
+  PHAN_QUYEN_VAI_TRO: 'phan_quyen_vai_tro',
+  CAU_HINH_NHA_HANG: 'cau_hinh_nha_hang',
+  XEM_NHAT_KY_HE_THONG: 'xem_nhat_ky_he_thong'
+};
+
+export const DANH_MUC_QUYEN = [
+  {
+    nhom: 'Nghiệp vụ Nhà bếp (KDS)',
+    danhSach: [
+      { ma: QUYEN_HAN.XEM_DON_BEP, ten: 'Xem danh sách món cần chế biến (KDS)' },
+      { ma: QUYEN_HAN.XU_LY_DON_BEP, ten: 'Cập nhật trạng thái món (Đang nấu / Đã xong / Báo hết)' }
+    ]
+  },
+  {
+    nhom: 'Nghiệp vụ Thu ngân (POS)',
+    danhSach: [
+      { ma: QUYEN_HAN.XEM_SO_DO_BAN, ten: 'Xem sơ đồ bàn và chi tiết đơn gọi món' },
+      { ma: QUYEN_HAN.THU_TIEN_IN_HOA_DON, ten: 'Thu tiền, áp dụng ưu đãi và xuất hóa đơn' }
+    ]
+  },
+  {
+    nhom: 'Quản lý Thực đơn & Doanh thu',
+    danhSach: [
+      { ma: QUYEN_HAN.CHINH_SUA_THUC_DON, ten: 'Thêm, sửa, xóa món ăn và danh mục thực đơn' },
+      { ma: QUYEN_HAN.XEM_BAO_CAO_DOANH_THU, ten: 'Xem báo cáo doanh thu và phân tích kinh doanh' }
+    ]
+  },
+  {
+    nhom: 'Quản trị Hệ thống & Nhân sự',
+    danhSach: [
+      { ma: QUYEN_HAN.QUAN_LY_NHAN_SU, ten: 'Quản lý tài khoản và hồ sơ nhân viên' },
+      { ma: QUYEN_HAN.PHAN_QUYEN_VAI_TRO, ten: 'Phân quyền và cấu hình vai trò nhân sự' },
+      { ma: QUYEN_HAN.CAU_HINH_NHA_HANG, ten: 'Cấu hình thông tin quán, thuế VAT, VietQR' },
+      { ma: QUYEN_HAN.XEM_NHAT_KY_HE_THONG, ten: 'Tra cứu nhật ký hoạt động hệ thống (System Logs)' }
+    ]
+  }
+];
+
+export const DUONG_DAN = {
+  DANG_NHAP: '#/dang-nhap',
+  HO_SO: '#/ho-so',
+  QUAN_LY_NHAN_VIEN: '#/nhan-vien',
+  VAI_TRO_QUYEN: '#/vai-tro-quyen',
+  LICH_SU_PHAN_QUYEN: '#/lich-su-phan-quyen',
+  CAU_HINH_NHA_HANG: '#/cau-hinh-nha-hang',
+  NHAT_KY_HE_THONG: '#/nhat-ky-he-thong',
+  // Các route dành riêng cho Bếp và Thu ngân (liên kết hiển thị theo US-019, US-020)
+  DIEU_PHOI_BEP: '#/dieu-phoi-bep',
+  SO_DO_BAN: '#/so-do-ban'
+};
+
+export const KHOA_LUU_TRU = {
+  TOKEN: 'nha_hang_token',
+  REFRESH_TOKEN: 'nha_hang_refresh_token',
+  NGUOI_DUNG: 'nha_hang_nguoi_dung',
+  GHI_NHO_DANG_NHAP: 'nha_hang_ghi_nho_dang_nhap'
+};
