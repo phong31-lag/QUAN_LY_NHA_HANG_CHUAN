@@ -29,9 +29,10 @@ jobs:
           lftp -e "set ssl:verify-certificate no; set ftp:ssl-allow true; set ftp:ssl-force false; set ftp:ssl-protect-data true; set ftp:passive-mode true; set net:timeout 30; set net:max-retries 3; mirror -R --verbose=1 --no-perms --no-umask --ignore-time --exclude-glob .git/ --exclude-glob .github/ ./ /; bye" -u "$FTP_USER","$FTP_PASS" "$HOST"
 
       - name: 🔄 Kích hoạt làm mới ứng dụng trên cPanel
-        run: |          PHAN_HOI=$(curl -s -X POST "https://tainguyenpremium.store""/api/tu-dong-dong-bo")
+        run: |
+                 PHAN_HOI=$(curl -s -X POST "https://tainguyenpremium.store""/api/tu-dong-dong-bo")
           echo "📮 Phản hồi từ máy chủ cPanel:"
           echo "$PHAN_HOI"
           echo "✅ Đã kích hoạt đồng bộ thành công!"
-          echo "🚀 Gửi yêu cầu làm mới đến máy chủ..."  workflow_dispatch:
+
 
