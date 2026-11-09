@@ -44,6 +44,7 @@ class QuanLyNhanVienModule {
         const soQuanLy = this.danhSachNhanVien.filter(nv => nv.vaiTro === 'QUAN_LY').length;
         const soThuNgan = this.danhSachNhanVien.filter(nv => nv.vaiTro === 'THU_NGAN').length;
         const soBep = this.danhSachNhanVien.filter(nv => nv.vaiTro === 'BEP').length;
+        const soPhucVu = this.danhSachNhanVien.filter(nv => nv.vaiTro === 'PHUC_VU').length;
 
         // Lọc danh sách nhân viên theo bộ lọc và tìm kiếm (US-012)
         const danhSachHienThi = this.danhSachNhanVien.filter(nv => {
@@ -91,7 +92,7 @@ class QuanLyNhanVienModule {
                         <div class="nhan-chi-so">Đã khóa / Nghỉ việc</div>
                     </div>
                     <div class="the-chi-so chi-so-cam">
-                        <div class="so-chi-so">${soQuanLy} QL / ${soThuNgan} TN / ${soBep} Bếp</div>
+                        <div class="so-chi-so">${soQuanLy} QL / ${soThuNgan} TN / ${soBep} Bếp / ${soPhucVu} PV</div>
                         <div class="nhan-chi-so">Cơ cấu vị trí làm việc</div>
                     </div>
                 </div>

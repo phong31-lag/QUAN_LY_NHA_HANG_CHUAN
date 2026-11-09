@@ -212,16 +212,20 @@ class BoDieuHuong {
      */
     async doiVaiTroNhanh(maVaiTro) {
         const banDoTaiKhoan = {
-            'QUAN_LY': { tenDangNhap: 'quanly', matKhau: '123456' },
-            'THU_NGAN': { tenDangNhap: 'thungan', matKhau: '123456' },
-            'BEP': { tenDangNhap: 'bep', matKhau: '123456' },
-            'PHUC_VU': { tenDangNhap: 'phucvu', matKhau: '123456' }
+            'QUAN_LY': ['quanly', 'quanly01'],
+            'THU_NGAN': ['thungan01', 'thungan'],
+            'BEP': ['bep01', 'bep'],
+            'PHUC_VU': ['phucvu01', 'phucvu']
         };
 
-        const thongTin = banDoTaiKhoan[maVaiTro];
-        if (!thongTin) return;
+        const dsThu = banDoTaiKhoan[maVaiTro] || [maVaiTro.toLowerCase()];
+        let kq = null;
 
-        const kq = await window.api.dangNhap(thongTin.tenDangNhap, thongTin.matKhau);
+        for (const user of dsThu) {
+            kq = await window.api.dangNhap(user, '123456');
+            if (kq && kq.ok) break;
+        }
+
         if (kq && kq.ok) {
             this.capNhatNguoiDung(kq.data.nguoiDung);
             if (window.thongBao) {
@@ -237,6 +241,10 @@ class BoDieuHuong {
             } else {
                 // Tải lại nội dung tab hiện tại với phân quyền mới
                 window.ungDung.chuyenTab(tabHienTai);
+            }
+        } else {
+            if (window.thongBao) {
+                window.thongBao.canhBao('Chuyển vai trò thất bại', (kq && kq.msg) || 'Không thể đăng nhập tài khoản vai trò này.');
             }
         }
     }

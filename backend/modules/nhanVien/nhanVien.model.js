@@ -112,9 +112,18 @@ async function layBanGhiGocTheoId(id) {
 
 async function layTheoTenDangNhap(tenDangNhap) {
     if (!tenDangNhap) return null;
-    return danhSachNhanVien.find(
-        n => n.tenDangNhap.toLowerCase() === tenDangNhap.toLowerCase().trim() && n.trangThai !== 'DaXoa'
-    ) || null;
+    const clean = tenDangNhap.toLowerCase().trim().replace(/^@/, '');
+    return danhSachNhanVien.find(n => {
+        if (n.trangThai === 'DaXoa') return false;
+        const u = n.tenDangNhap.toLowerCase().replace(/^@/, '');
+        return u === clean || 
+               u === `${clean}01` || 
+               `${u}01` === clean ||
+               (clean === 'thungan' && u.startsWith('thungan')) ||
+               (clean === 'bep' && u.startsWith('bep')) ||
+               (clean === 'phucvu' && u.startsWith('phucvu')) ||
+               (clean === 'quanly' && u.startsWith('quanly'));
+    }) || null;
 }
 
 async function taoMoi(duLieu) {

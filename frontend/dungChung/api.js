@@ -1412,13 +1412,56 @@ class ApiService {
         if (kq && kq.ok && Array.isArray(kq.data) && kq.data.length > 0) return kq.data;
 
         let data = localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_VAI_TRO || 'quanmoc_ds_vai_tro');
-        if (!data) {
-            this.khoiTaoDuLieuMauBanDau();
-            data = localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_VAI_TRO || 'quanmoc_ds_vai_tro');
+        if (!data || data === '[]') {
+            const dsVaiTroMau = [
+                {
+                    ma: 'QUAN_LY',
+                    ten: 'Quản lý / Chủ nhà hàng',
+                    moTa: 'Toàn quyền điều hành hệ thống, nhân sự, thực đơn và tài chính',
+                    danhSachQuyen: [
+                        'BAN_XEM', 'BAN_SUA', 'BAN_IN_QR',
+                        'MON_XEM', 'MON_SUA', 'MON_TRANG_THAI',
+                        'THU_NGAN_XEM', 'THU_NGAN_THANH_TOAN', 'THU_NGAN_IN_BILL',
+                        'BEP_XEM', 'BEP_CAP_NHAT',
+                        'NHAN_VIEN_XEM', 'NHAN_VIEN_SUA', 'PHAN_QUYEN_SUA',
+                        'CAU_HINH_XEM', 'CAU_HINH_SUA'
+                    ]
+                },
+                {
+                    ma: 'THU_NGAN',
+                    ten: 'Nhân viên Thu ngân',
+                    moTa: 'Quản lý sơ đồ bàn POS, thanh toán hóa đơn, in phiếu và mở/đóng ca',
+                    danhSachQuyen: [
+                        'BAN_XEM', 'BAN_SUA', 'BAN_IN_QR',
+                        'MON_XEM',
+                        'THU_NGAN_XEM', 'THU_NGAN_THANH_TOAN', 'THU_NGAN_IN_BILL'
+                    ]
+                },
+                {
+                    ma: 'BEP',
+                    ten: 'Đầu bếp (KDS)',
+                    moTa: 'Xem danh sách gọi món, điều phối món ăn và bật tắt hết món',
+                    danhSachQuyen: [
+                        'MON_XEM', 'MON_TRANG_THAI',
+                        'BEP_XEM', 'BEP_CAP_NHAT'
+                    ]
+                },
+                {
+                    ma: 'PHUC_VU',
+                    ten: 'Nhân viên Phục vụ',
+                    moTa: 'Xem trạng thái bàn ăn, hỗ trợ khách hàng và kiểm tra gọi món',
+                    danhSachQuyen: [
+                        'BAN_XEM',
+                        'MON_XEM'
+                    ]
+                }
+            ];
+            localStorage.setItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_VAI_TRO || 'quanmoc_ds_vai_tro', JSON.stringify(dsVaiTroMau));
+            return dsVaiTroMau;
         }
         try {
             const arr = data ? JSON.parse(data) : [];
-            return Array.isArray(arr) ? arr : [];
+            return Array.isArray(arr) && arr.length > 0 ? arr : [];
         } catch {
             return [];
         }
