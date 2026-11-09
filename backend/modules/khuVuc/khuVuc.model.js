@@ -1,13 +1,17 @@
 const { docDuLieu, ghiDuLieu } = require('../../tienIch/luuTruDuLieu');
 
 const duLieuKhuVucMacDinh = [
-    { id: 1, tenKhuVuc: 'Tầng 1 (Máy lạnh)', ghiChu: 'Không gian ấm cúng, phù hợp gia đình', trangThai: 'HoatDong', ngayTao: new Date() },
-    { id: 2, tenKhuVuc: 'Tầng 2 (Ngoài trời)', ghiChu: 'Thoáng đãng, ngắm phố xá về đêm', trangThai: 'HoatDong', ngayTao: new Date() },
-    { id: 3, tenKhuVuc: 'Khu Sân Vườn', ghiChu: 'Không gian xanh mát mẻ, tiệc nhóm', trangThai: 'HoatDong', ngayTao: new Date() },
-    { id: 4, tenKhuVuc: 'Phòng VIP', ghiChu: 'Không gian riêng tư, tiếp khách sang trọng', trangThai: 'HoatDong', ngayTao: new Date() }
+    { id: 1, ma: 'KV_1', ten: 'Tầng 1', tenKhuVuc: 'Tầng 1', ghiChu: 'Khu vực tầng 1 trong nhà', thuTu: 1, trangThai: 'HoatDong' },
+    { id: 2, ma: 'KV_2', ten: 'Tầng 2', tenKhuVuc: 'Tầng 2', ghiChu: 'Khu vực tầng 2 lầu cao', thuTu: 2, trangThai: 'HoatDong' },
+    { id: 3, ma: 'KV_3', ten: 'Ngoài trời', tenKhuVuc: 'Ngoài trời', ghiChu: 'Khu vực sân vườn ngoài trời thoáng mát', thuTu: 3, trangThai: 'HoatDong' },
+    { id: 4, ma: 'KV_4', ten: 'Phòng VIP', tenKhuVuc: 'Phòng VIP', ghiChu: 'Khu vực phòng VIP máy lạnh riêng tư', thuTu: 4, trangThai: 'HoatDong' }
 ];
 
 let danhSachKhuVuc = docDuLieu('khuVuc', duLieuKhuVucMacDinh);
+if (!Array.isArray(danhSachKhuVuc) || danhSachKhuVuc.length === 0) {
+    danhSachKhuVuc = [...duLieuKhuVucMacDinh];
+    ghiDuLieu('khuVuc', danhSachKhuVuc);
+}
 let tuTangId = Math.max(...danhSachKhuVuc.map(kv => kv.id || 0), 0) + 1;
 
 function luu() {
