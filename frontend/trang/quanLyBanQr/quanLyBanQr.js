@@ -485,6 +485,7 @@ class QuanLyBanQrModule {
             if (ban) {
                 ban.khuVucId = khuVucId;
                 ban.soBan = soBan;
+                ban.tenBan = soBan;
                 ban.maBan = maBan;
                 ban.sucChua = sucChua;
                 ban.trangThai = trangThai;
@@ -500,9 +501,11 @@ class QuanLyBanQrModule {
                 id: idMoi,
                 khuVucId,
                 soBan,
+                tenBan: soBan,
                 maBan,
                 sucChua,
                 qrToken,
+                tokenBaoMat: qrToken,
                 trangThai,
                 ghiChu
             });

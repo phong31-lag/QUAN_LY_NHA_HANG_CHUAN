@@ -139,7 +139,8 @@ async function taoDonGoiMon(duLieu) {
         ...duLieu,
         banId: ban.id,
         maBan: ban.maBan,
-        tenBan: ban.tenBan,
+        tenBan: ban.tenBan || ban.soBan || duLieu.tenBan || duLieu.soBan,
+        soBan: ban.soBan || ban.tenBan || duLieu.soBan || duLieu.tenBan,
         khuVucId: ban.khuVucId,
         tenKhuVuc: khuVucTen
     };

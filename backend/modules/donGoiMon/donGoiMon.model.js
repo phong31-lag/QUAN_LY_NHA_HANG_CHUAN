@@ -98,7 +98,8 @@ async function taoDon(duLieu) {
         maDon,
         banId,
         maBan: duLieu.maBan || `Bàn ${banId}`,
-        tenBan: duLieu.tenBan || `Bàn ${banId}`,
+        tenBan: duLieu.tenBan || duLieu.soBan || `Bàn ${banId}`,
+        soBan: duLieu.soBan || duLieu.tenBan || `Bàn ${banId}`,
         khuVucId: duLieu.khuVucId || 1,
         tenKhuVuc: duLieu.tenKhuVuc || '',
         luotGoi,
@@ -124,6 +125,13 @@ async function capNhatTrangThaiMon(itemId, trangThaiMoi) {
         if (mon) {
             mon.trangThai = trangThaiMoi;
             mon.thoiGianCapNhat = new Date();
+            // Nếu hủy món hoặc từ chối thì tính lại tổng tiền đơn
+            if (trangThaiMoi === 'DA_HUY' || trangThaiMoi === 'TU_CHOI') {
+                don.tongTienDon = don.danhSachMon
+                    .filter(m => m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI')
+                    .reduce((tong, m) => tong + (m.thanhTien || (m.donGia * (m.soLuong || 1))), 0);
+                don.tongTien = don.tongTienDon;
+            }
             luu();
             return { don, mon };
         }

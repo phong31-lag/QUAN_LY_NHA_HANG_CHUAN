@@ -2023,6 +2023,7 @@ class ApiService {
                                     monHienTai.trangThai = ttChuan;
                                     if (m.thoiGianCapNhat) monHienTai.thoiGianCapNhat = m.thoiGianCapNhat;
                                 } else {
+                                    if (ttChuan === 'DA_HUY' || ttChuan === 'TU_CHOI') return;
                                     let itemThoiGian = m.thoiGianTao || m.thoiGianCapNhat;
                                     if (!itemThoiGian) {
                                         if (m.id && Number(m.id) > 1700000000000) itemThoiGian = new Date(Number(m.id)).toISOString();

@@ -127,6 +127,19 @@ class DieuPhoiBepModule {
             if (!don.thoiGianTao) {
                 don.thoiGianTao = don.thoiGianDat || don.thoiGian || new Date().toISOString().replace('T', ' ').substring(0, 19);
             }
+            const thongTinBan = (this.danhSachBan || []).find(b => 
+                (don.banId && Number(b.id) === Number(don.banId)) ||
+                (don.maBan && String(b.maBan).toUpperCase() === String(don.maBan).toUpperCase())
+            );
+            if (thongTinBan) {
+                don.soBan = thongTinBan.soBan || thongTinBan.tenBan || don.soBan;
+                don.tenBan = thongTinBan.tenBan || thongTinBan.soBan || don.tenBan;
+                if (!don.khuVucTen && (thongTinBan.khuVucTen || thongTinBan.tenKhuVuc)) {
+                    don.khuVucTen = thongTinBan.khuVucTen || thongTinBan.tenKhuVuc;
+                }
+            } else if (!don.soBan) {
+                don.soBan = don.tenBan || `Bàn ${don.banId}`;
+            }
             if (!don.khuVucTen) don.khuVucTen = 'Tầng 1';
             if (!Array.isArray(don.danhSachMon)) don.danhSachMon = [];
             don.danhSachMon.forEach(m => {
@@ -486,16 +499,23 @@ class DieuPhoiBepModule {
 
         danhSach.forEach(don => {
             if (!don) return;
-            const soBanSo = this.laySoThuTuBan(don);
-            const banKey = don.banId ? Number(don.banId) : soBanSo;
+            const banKey = don.banId ? Number(don.banId) : this.laySoThuTuBan(don);
+
+            // Lấy tên bàn chính xác do người dùng đặt từ danh mục bàn
+            const thongTinBan = (this.danhSachBan || []).find(b => 
+                (don.banId && Number(b.id) === Number(don.banId)) ||
+                (don.maBan && String(b.maBan).toUpperCase() === String(don.maBan).toUpperCase())
+            );
+            const tenBanChinhXac = (thongTinBan && (thongTinBan.soBan || thongTinBan.tenBan)) || don.soBan || don.tenBan || `Bàn ${don.banId}`;
+            const khuVucTen = (thongTinBan && (thongTinBan.khuVucTen || thongTinBan.tenKhuVuc)) || don.khuVucTen || 'Tầng 1';
 
             if (!banMap.has(banKey)) {
-                const tenBanChuan = `Bàn ${String(soBanSo).padStart(2, "0")}`;
                 const donGop = {
                     ...don,
                     id: don.id,
                     banId: banKey,
-                    soBan: tenBanChuan,
+                    soBan: tenBanChinhXac,
+                    khuVucTen,
                     cacDonGocIds: [don.id],
                     cacMaDon: don.maDon ? [don.maDon] : [],
                     soLuotGoi: don.luotGoi || 1,

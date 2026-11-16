@@ -227,30 +227,65 @@ class SoDoBanPosModule {
                                 banId: bId,
                                 thoiGianBatDau: don.thoiGianDat || don.thoiGianTao || new Date().toISOString(),
                                 soKhach: don.soKhach || 2,
-                                danhSachMon: []
+                                danhSachMon: [],
+                                danhSachMonDaXoa: []
                             };
+                        }
+
+                        if (!phienKetHop[bId].danhSachMonDaXoa) {
+                            phienKetHop[bId].danhSachMonDaXoa = [];
                         }
 
                         if (Array.isArray(don.danhSachMon)) {
                             don.danhSachMon.forEach(m => {
-                                const monDaCo = phienKetHop[bId].danhSachMon.find(ex => 
-                                    (m.id && Number(ex.id) === Number(m.id)) || (m.id && String(ex.id) === String(m.id))
+                                // 1. Bỏ qua các món đã hủy hoặc bị từ chối
+                                if (m.trangThai === 'DA_HUY' || m.trangThai === 'TU_CHOI') {
+                                    const monDaCo = phienKetHop[bId].danhSachMon.find(ex => 
+                                        (m.id && (Number(ex.id) === Number(m.id) || String(ex.id) === String(m.id)))
+                                    );
+                                    if (monDaCo) monDaCo.trangThai = m.trangThai;
+                                    return;
+                                }
+
+                                const maMon = m.monAnId || m.monId;
+                                const maItem = m.id;
+
+                                // 2. Bỏ qua nếu món này nằm trong danh sách đã bị người dùng xóa khỏi phiên
+                                const daBiXoa = phienKetHop[bId].danhSachMonDaXoa && (
+                                    (maItem && phienKetHop[bId].danhSachMonDaXoa.includes(Number(maItem))) ||
+                                    (maMon && phienKetHop[bId].danhSachMonDaXoa.includes(Number(maMon)))
                                 );
+                                if (daBiXoa) return;
+
+                                // 3. Tìm xem món đã có trong danh sách chưa (theo id hoặc monAnId)
+                                const monDaCo = phienKetHop[bId].danhSachMon.find(ex => 
+                                    (maItem && (Number(ex.id) === Number(maItem) || String(ex.id) === String(maItem))) ||
+                                    (maMon && Number(ex.monAnId) === Number(maMon) && ex.trangThai !== 'DA_HUY' && ex.trangThai !== 'TU_CHOI')
+                                );
+
                                 if (monDaCo) {
                                     if (m.trangThai) monDaCo.trangThai = m.trangThai;
                                 } else {
-                                    phienKetHop[bId].danhSachMon.push({
-                                        id: m.id || Date.now() + Math.floor(Math.random() * 1000),
-                                        monAnId: m.monAnId || m.monId,
-                                        tenMon: m.tenMon,
-                                        soLuong: m.soLuong || 1,
-                                        donGia: m.donGia || 0,
-                                        tuyChon: m.tuyChon || '',
-                                        ghiChu: m.ghiChu || '',
-                                        trangThai: m.trangThai || 'CHO_CHE_BIEN',
-                                        thoiGianTao: m.thoiGianTao,
-                                        thoiGianCapNhat: m.thoiGianCapNhat
-                                    });
+                                    // 4. CHỈ thêm món nếu bàn chưa có phiên hoặc đơn này là đơn gọi món mới
+                                    const laPhienMoi = !phienLocal[bId] || !phienLocal[bId].danhSachMon || phienLocal[bId].danhSachMon.length === 0;
+                                    const laDonMoi = don.thoiGianTao && phienLocal[bId] && phienLocal[bId].thoiGianBatDau &&
+                                                     new Date(don.thoiGianTao).getTime() > new Date(phienLocal[bId].thoiGianBatDau).getTime();
+
+                                    if (laPhienMoi || laDonMoi) {
+                                        phienKetHop[bId].danhSachMon.push({
+                                            id: m.id || Date.now() + Math.floor(Math.random() * 1000),
+                                            monAnId: maMon,
+                                            monId: maMon,
+                                            tenMon: m.tenMon,
+                                            soLuong: m.soLuong || 1,
+                                            donGia: m.donGia || 0,
+                                            tuyChon: m.tuyChon || '',
+                                            ghiChu: m.ghiChu || '',
+                                            trangThai: m.trangThai || 'CHO_CHE_BIEN',
+                                            thoiGianTao: m.thoiGianTao,
+                                            thoiGianCapNhat: m.thoiGianCapNhat
+                                        });
+                                    }
                                 }
                             });
                         }
@@ -982,8 +1017,9 @@ class SoDoBanPosModule {
         const phien = dsPhien[banId] || { danhSachMon: [] };
         const mapSoLuong = {};
         (phien.danhSachMon || []).forEach(m => {
-            if (m.trangThai !== 'DA_HUY') {
-                mapSoLuong[m.monAnId] = (mapSoLuong[m.monAnId] || 0) + (m.soLuong || 1);
+            if (m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI') {
+                const mId = m.monAnId || m.monId;
+                mapSoLuong[mId] = (mapSoLuong[mId] || 0) + (m.soLuong || 1);
             }
         });
 
@@ -1015,8 +1051,9 @@ class SoDoBanPosModule {
             `;
         });
 
-        const tongMon = (phien.danhSachMon || []).filter(m => m.trangThai !== 'DA_HUY').reduce((s, m) => s + (m.soLuong || 1), 0);
-        const tongTien = (phien.danhSachMon || []).filter(m => m.trangThai !== 'DA_HUY').reduce((s, m) => s + (m.donGia * (m.soLuong || 1)), 0);
+        const dsMonHopLe = (phien.danhSachMon || []).filter(m => m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI');
+        const tongMon = dsMonHopLe.reduce((s, m) => s + (m.soLuong || 1), 0);
+        const tongTien = dsMonHopLe.reduce((s, m) => s + (m.donGia * (m.soLuong || 1)), 0);
 
         modal.innerHTML = `
             <div class="hop-modal hop-modal-lon modal-goi-mon-ho">
@@ -1024,7 +1061,7 @@ class SoDoBanPosModule {
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 26px;">🍲</span>
                         <div>
-                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">Gọi Món Hộ Khách — ${ban.soBan}</h3>
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">Gọi Món Hộ Khách — ${ban.soBan || ban.tenBan}</h3>
                             <span style="font-size: 12.5px; color: #64748b;">Mã bàn: <strong>${ban.maBan}</strong> • Sức chứa: <strong>${ban.sucChua} chỗ</strong> • Trạng thái: <strong style="color: ${ban.trangThai === 'DANG_DUNG' ? '#c2410c' : '#16a34a'};">${ban.trangThai === 'DANG_DUNG' ? 'Đang phục vụ' : 'Bàn trống'}</strong></span>
                         </div>
                     </div>
@@ -1073,25 +1110,40 @@ class SoDoBanPosModule {
     veCotDonHangGoiHo(banId) {
         const dsPhien = this.layTatCaPhienBan() || {};
         const phien = dsPhien[banId] || { danhSachMon: [] };
-        const dsMon = (phien.danhSachMon || []).filter(m => m.trangThai !== 'DA_HUY');
+        const dsMon = (phien.danhSachMon || []).filter(m => m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI');
 
-        const tongTien = dsMon.reduce((s, m) => s + (m.donGia * (m.soLuong || 1)), 0);
-        const tongMon = dsMon.reduce((s, m) => s + (m.soLuong || 1), 0);
+        // Gộp các món cùng monAnId để hiển thị chuẩn xác, không bị nhân bản dòng
+        const dsMonNhom = [];
+        const mapMon = {};
+        dsMon.forEach(m => {
+            const mId = m.monAnId || m.monId || m.id;
+            if (mapMon[mId]) {
+                mapMon[mId].soLuong += (m.soLuong || 1);
+            } else {
+                mapMon[mId] = { ...m, soLuong: m.soLuong || 1 };
+                dsMonNhom.push(mapMon[mId]);
+            }
+        });
+
+        const tongTien = dsMonNhom.reduce((s, m) => s + (m.donGia * (m.soLuong || 1)), 0);
+        const tongMon = dsMonNhom.reduce((s, m) => s + (m.soLuong || 1), 0);
 
         return `
             <div class="dau-cot-don-gh">
                 <h4>📋 Món Đang Chọn (${tongMon})</h4>
-                <span style="font-size: 12px; color: #64748b;">${dsMon.length} loại món</span>
+                <span style="font-size: 12px; color: #64748b;">${dsMonNhom.length} loại món</span>
             </div>
 
             <div class="danh-sach-mon-da-chon-gh">
-                ${dsMon.length === 0 ? `
+                ${dsMonNhom.length === 0 ? `
                     <div class="khung-don-trong-gh">
                         <div style="font-size: 32px; margin-bottom: 8px;">🍽️</div>
                         <strong>Bàn chưa có món nào</strong>
                         <p style="font-size: 12px; margin-top: 4px; color: #94a3b8;">Bấm "➕ Thêm vào bàn" ở thực đơn bên trái để chọn món</p>
                     </div>
-                ` : dsMon.map(m => `
+                ` : dsMonNhom.map(m => {
+                    const mId = m.monAnId || m.monId || m.id;
+                    return `
                     <div class="hang-mon-da-chon-gh">
                         <div class="ten-va-gia-mon-chon">
                             <div class="ten-mon-chon" title="${m.tenMon}">${m.tenMon}</div>
@@ -1099,18 +1151,18 @@ class SoDoBanPosModule {
                         </div>
 
                         <div class="bo-dem-so-luong-gh">
-                            <button class="nut-tang-giam-gh" onclick="window.soDoBanPos.giamSoLuongMonGoiHo(${banId}, ${m.monAnId})" title="Giảm">−</button>
+                            <button class="nut-tang-giam-gh" onclick="window.soDoBanPos.giamSoLuongMonGoiHo(${banId}, ${mId})" title="Giảm">−</button>
                             <span class="so-luong-hien-tai-gh">${m.soLuong}</span>
-                            <button class="nut-tang-giam-gh" onclick="window.soDoBanPos.tangSoLuongMonGoiHo(${banId}, ${m.monAnId})" title="Thêm">+</button>
+                            <button class="nut-tang-giam-gh" onclick="window.soDoBanPos.tangSoLuongMonGoiHo(${banId}, ${mId})" title="Thêm">+</button>
                         </div>
 
                         <div class="thanh-tien-mon-chon">
                             ${((m.donGia || 0) * m.soLuong).toLocaleString()} đ
                         </div>
 
-                        <button class="nut-xoa-mon-gh" onclick="window.soDoBanPos.xoaMonKhoiGoiHo(${banId}, ${m.monAnId})" title="Xóa món này">🗑️</button>
+                        <button class="nut-xoa-mon-gh" onclick="window.soDoBanPos.xoaMonKhoiGoiHo(${banId}, ${mId})" title="Xóa món này">🗑️</button>
                     </div>
-                `).join('')}
+                `;}).join('')}
             </div>
 
             <div class="chan-cot-don-gh">
@@ -1130,7 +1182,7 @@ class SoDoBanPosModule {
 
         const dsPhien = this.layTatCaPhienBan() || {};
         const phien = dsPhien[banId] || { danhSachMon: [] };
-        const dsMon = (phien.danhSachMon || []).filter(m => m.trangThai !== 'DA_HUY');
+        const dsMon = (phien.danhSachMon || []).filter(m => m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI');
 
         const tongMon = dsMon.reduce((s, m) => s + (m.soLuong || 1), 0);
         const tongTien = dsMon.reduce((s, m) => s + (m.donGia * (m.soLuong || 1)), 0);
@@ -1143,7 +1195,10 @@ class SoDoBanPosModule {
         // Cập nhật lại badge số lượng trên từng thẻ món bên trái
         const mapSoLuong = {};
         dsMon.forEach(m => {
-            mapSoLuong[m.monAnId] = (mapSoLuong[m.monAnId] || 0) + (m.soLuong || 1);
+            const mId = m.monAnId || m.monId;
+            if (mId) {
+                mapSoLuong[mId] = (mapSoLuong[mId] || 0) + (m.soLuong || 1);
+            }
         });
 
         document.querySelectorAll('.the-mon-goi-ho').forEach(el => {
@@ -1200,14 +1255,24 @@ class SoDoBanPosModule {
                 soKhach: 4,
                 thoiGianBatDau: new Date().toISOString(),
                 ghiChu: '',
-                danhSachMon: []
+                danhSachMon: [],
+                danhSachMonDaXoa: []
             };
             dsPhien[banId] = phien;
         }
 
+        // Bỏ khỏi danh sách đã xóa nếu người dùng chọn lại
+        if (phien.danhSachMonDaXoa) {
+            phien.danhSachMonDaXoa = phien.danhSachMonDaXoa.filter(id => id !== Number(monId) && id !== Number(mon.id));
+        }
+
         const thoiGianHienTai = new Date().toISOString();
         // Kiểm tra xem món đã có trong đơn chưa, nếu có thì tăng số lượng
-        const monDaCo = phien.danhSachMon.find(m => m.monAnId == monId && m.trangThai !== 'DA_HUY');
+        const monDaCo = (phien.danhSachMon || []).find(m => 
+            (m.monAnId == monId || m.monId == monId || m.id == monId) && 
+            m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI'
+        );
+
         if (monDaCo) {
             monDaCo.soLuong += 1;
             monDaCo.thoiGianCapNhat = thoiGianHienTai;
@@ -1216,9 +1281,11 @@ class SoDoBanPosModule {
                 monDaCo.trangThai = 'CHO_XAC_NHAN';
             }
         } else {
+            if (!phien.danhSachMon) phien.danhSachMon = [];
             phien.danhSachMon.push({
                 id: Date.now() + Math.floor(Math.random() * 1000),
                 monAnId: mon.id,
+                monId: mon.id,
                 tenMon: mon.tenMon,
                 soLuong: 1,
                 donGia: mon.giaBan,
@@ -1244,60 +1311,114 @@ class SoDoBanPosModule {
         }
 
         this.capNhatCotDonHangGoiHo(banId);
-        this.taiVaHienThi();
+        await this.taiVaHienThi();
+        this.capNhatCotDonHangGoiHo(banId);
     }
 
-    tangSoLuongMonGoiHo(banId, monId) {
+    async tangSoLuongMonGoiHo(banId, monId) {
         const dsPhien = this.layTatCaPhienBan();
         const phien = dsPhien[banId];
         if (!phien) return;
 
-        const mon = (phien.danhSachMon || []).find(m => m.monAnId == monId && m.trangThai !== 'DA_HUY');
+        const mon = (phien.danhSachMon || []).find(m => 
+            (m.monAnId == monId || m.monId == monId || m.id == monId) && 
+            m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI'
+        );
         if (mon) {
             mon.soLuong += 1;
             mon.thoiGianCapNhat = new Date().toISOString();
             this.luuTatCaPhienBan(dsPhien);
             this.capNhatCotDonHangGoiHo(banId);
-            this.taiVaHienThi();
-        }
-    }
-
-    giamSoLuongMonGoiHo(banId, monId) {
-        const dsPhien = this.layTatCaPhienBan();
-        const phien = dsPhien[banId];
-        if (!phien) return;
-
-        const mon = (phien.danhSachMon || []).find(m => m.monAnId == monId && m.trangThai !== 'DA_HUY');
-        if (mon) {
-            if (mon.soLuong > 1) {
-                mon.soLuong -= 1;
-                mon.thoiGianCapNhat = new Date().toISOString();
-            } else {
-                phien.danhSachMon = phien.danhSachMon.filter(m => !(m.monAnId == monId && m.trangThai !== 'DA_HUY'));
-            }
-            this.luuTatCaPhienBan(dsPhien);
+            await this.taiVaHienThi();
             this.capNhatCotDonHangGoiHo(banId);
-            this.taiVaHienThi();
         }
     }
 
-    xoaMonKhoiGoiHo(banId, monId) {
+    async giamSoLuongMonGoiHo(banId, monId) {
         const dsPhien = this.layTatCaPhienBan();
         const phien = dsPhien[banId];
         if (!phien) return;
 
-        phien.danhSachMon = (phien.danhSachMon || []).filter(m => !(m.monAnId == monId && m.trangThai !== 'DA_HUY'));
+        const cacMonPhuHop = (phien.danhSachMon || []).filter(m => 
+            (m.monAnId == monId || m.monId == monId || m.id == monId) && 
+            m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI'
+        );
+
+        if (cacMonPhuHop.length === 0) return;
+
+        const tongSl = cacMonPhuHop.reduce((sum, m) => sum + (m.soLuong || 1), 0);
+        if (tongSl <= 1) {
+            await this.xoaMonKhoiGoiHo(banId, monId);
+            return;
+        }
+
+        const monGiam = cacMonPhuHop[0];
+        monGiam.soLuong -= 1;
+        monGiam.thoiGianCapNhat = new Date().toISOString();
+
         this.luuTatCaPhienBan(dsPhien);
         this.capNhatCotDonHangGoiHo(banId);
-        this.taiVaHienThi();
+        await this.taiVaHienThi();
+        this.capNhatCotDonHangGoiHo(banId);
     }
 
-    hoanTatGoiMonHo(banId) {
+    async xoaMonKhoiGoiHo(banId, monId) {
+        const dsPhien = this.layTatCaPhienBan();
+        const phien = dsPhien[banId];
+        if (!phien) return;
+
+        // Lưu danh sách món bị xóa vào danhSachMonDaXoa để tránh server sync khôi phục lại
+        if (!phien.danhSachMonDaXoa) {
+            phien.danhSachMonDaXoa = [];
+        }
+        if (!phien.danhSachMonDaXoa.includes(Number(monId))) {
+            phien.danhSachMonDaXoa.push(Number(monId));
+        }
+
+        // Lấy danh sách các món cần xóa
+        const cacMonCanXoa = (phien.danhSachMon || []).filter(m => 
+            (m.monAnId == monId || m.monId == monId || m.id == monId)
+        );
+
+        // Đánh dấu DA_HUY cho các món này và ghi nhớ id
+        cacMonCanXoa.forEach(m => {
+            m.trangThai = 'DA_HUY';
+            if (m.id && !phien.danhSachMonDaXoa.includes(Number(m.id))) {
+                phien.danhSachMonDaXoa.push(Number(m.id));
+            }
+        });
+
+        // Lọc loại bỏ khỏi danh sách món hoạt động
+        phien.danhSachMon = (phien.danhSachMon || []).filter(m => 
+            m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI' &&
+            !(m.monAnId == monId || m.monId == monId || m.id == monId)
+        );
+
+        this.luuTatCaPhienBan(dsPhien);
+        this.capNhatCotDonHangGoiHo(banId);
+
+        // Đồng bộ hủy trạng thái món lên server nếu món này đã có trên server
+        for (const monXoa of cacMonCanXoa) {
+            if (monXoa.id && window.api && window.api.capNhatTrangThaiMonAn) {
+                try {
+                    await window.api.capNhatTrangThaiMonAn(monXoa.id, banId, 'DA_HUY');
+                } catch (e) {
+                    console.warn('Lỗi đồng bộ hủy món lên server:', e);
+                }
+            }
+        }
+
+        // Đồng bộ lại giao diện bàn nền nhưng giữ nguyên trạng thái modal
+        await this.taiVaHienThi();
+        this.capNhatCotDonHangGoiHo(banId);
+    }
+
+    async hoanTatGoiMonHo(banId) {
         this.dongModal();
         if (window.thongBao) {
             window.thongBao.thanhCong('Đã lưu gọi món', 'Đơn của bàn đã được cập nhật thành công!');
         }
-        this.taiVaHienThi();
+        await this.taiVaHienThi();
     }
 
     // =========================================================================
