@@ -577,10 +577,13 @@ class GioHangManager {
         }
 
         try {
+            const khach = window.api && window.api.layKhachHangHienTai ? window.api.layKhachHangHienTai() : null;
             const donHang = {
                 banId: banId,
                 maBan: maBan,
                 tenBan: tenBan,
+                soDienThoai: khach ? khach.soDienThoai : '',
+                tenKhach: khach ? (khach.tenKhach || khach.soDienThoai) : '',
                 danhSachMon: [...this.cacMonTrongGio],
                 tongSoLuong: tongSl,
                 tongTien: this.tinhTongTienClient(),

@@ -102,6 +102,8 @@ async function taoDon(duLieu) {
         soBan: duLieu.soBan || duLieu.tenBan || `Bàn ${banId}`,
         khuVucId: duLieu.khuVucId || 1,
         tenKhuVuc: duLieu.tenKhuVuc || '',
+        soDienThoai: duLieu.soDienThoai || '',
+        tenKhach: duLieu.tenKhach || '',
         luotGoi,
         thoiGianTao: nowIso,
         thoiGianDat: nowIso,
@@ -115,6 +117,15 @@ async function taoDon(duLieu) {
 
     danhSachDonGoi.push(donMoi);
     luu();
+
+    // Tích lũy điểm và số đơn cho tài khoản khách hàng nếu có
+    if (duLieu.soDienThoai) {
+        try {
+            const khachHangModel = require('../khachHang/khachHang.model');
+            khachHangModel.tichLuyDonHang(duLieu.soDienThoai, tongTienDon);
+        } catch (e) {}
+    }
+
     return donMoi;
 }
 

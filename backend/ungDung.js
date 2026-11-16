@@ -29,6 +29,7 @@ const thanhToanModule = require('./modules/thanhToan');
 const danhGiaModule = require('./modules/danhGia');
 const caLamViecModule = require('./modules/caLamViec');
 const baoCaoModule = require('./modules/baoCao');
+const khachHangModule = require('./modules/khachHang');
 
 const ungDung = express();
 
@@ -211,6 +212,7 @@ ungDung.use('/api/thanh-toan', thanhToanModule.router);
 ungDung.use('/api/danh-gia', danhGiaModule.router);
 ungDung.use('/api/ca-lam-viec', caLamViecModule.router);
 ungDung.use('/api/bao-cao', baoCaoModule.router);
+ungDung.use('/api/khach-hang', khachHangModule.router);
 
 // Phục vụ giao diện E-Menu Gọi món QR & Single Page Application (SPA)
 ungDung.get(['/e-menu', '/e-menu/*', '/menu', '/menu/*', '/theo-doi-don', '/bep-kds', '/pos'], (req, res) => {

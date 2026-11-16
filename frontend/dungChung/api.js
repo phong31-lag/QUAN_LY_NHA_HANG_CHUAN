@@ -3416,6 +3416,78 @@ class ApiService {
             lyDoHuyList: Object.entries(lyDoHuyMap).map(([lyDo, sl]) => ({ lyDo, soLuong: sl }))
         };
     }
+
+    // =========================================================================
+    // TÀI KHOẢN KHÁCH HÀNG QUÉT MÃ QR (ĐĂNG KÝ / ĐĂNG NHẬP / TÍCH ĐIỂM)
+    // =========================================================================
+
+    /**
+     * Tự động đăng ký nếu chưa có tài khoản, hoặc đăng nhập nếu đã có
+     */
+    async xacThucKhachHang({ soDienThoai, matKhau, tenKhach }) {
+        try {
+            const res = await this.yeuCau('/khach-hang/xac-thuc', {
+                method: 'POST',
+                body: { soDienThoai, matKhau, tenKhach }
+            });
+            if (res && res.ok && res.data) {
+                // Lưu thông tin khách hàng vào localStorage
+                localStorage.setItem('quanmoc_khach_hang_hien_tai', JSON.stringify(res.data.khachHang));
+                localStorage.setItem('quanmoc_khach_hang_token', res.data.token || '');
+                return res;
+            }
+            return res || { ok: false, msg: 'Không thể kết nối đến máy chủ xác thực' };
+        } catch (e) {
+            console.error('Lỗi xác thực khách hàng:', e);
+            return { ok: false, msg: e.message || 'Lỗi hệ thống khi xác thực' };
+        }
+    }
+
+    /**
+     * Lấy thông tin khách hàng hiện tại
+     */
+    async layThongTinKhachHang(soDienThoai) {
+        try {
+            const res = await this.yeuCau('/khach-hang/thong-tin?sdt=' + encodeURIComponent(soDienThoai));
+            if (res && res.ok && res.data) {
+                localStorage.setItem('quanmoc_khach_hang_hien_tai', JSON.stringify(res.data));
+            }
+            return res;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Lấy lịch sử đơn hàng của khách hàng
+     */
+    async layLichSuDonKhachHang(soDienThoai) {
+        try {
+            return await this.yeuCau('/khach-hang/lich-su-don?sdt=' + encodeURIComponent(soDienThoai));
+        } catch (e) {
+            return { ok: true, data: [] };
+        }
+    }
+
+    /**
+     * Lấy tài khoản khách hàng đang đăng nhập từ local cache
+     */
+    layKhachHangHienTai() {
+        try {
+            const raw = localStorage.getItem('quanmoc_khach_hang_hien_tai');
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Đăng xuất tài khoản khách hàng
+     */
+    dangXuatKhachHang() {
+        localStorage.removeItem('quanmoc_khach_hang_hien_tai');
+        localStorage.removeItem('quanmoc_khach_hang_token');
+    }
 }
 
 // Khởi tạo đối tượng toàn cục

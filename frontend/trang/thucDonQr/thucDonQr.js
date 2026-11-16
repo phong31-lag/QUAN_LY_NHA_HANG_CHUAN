@@ -44,6 +44,9 @@ class ThucDonQrManager {
 
         // 4. Render giao diện
         this.veGiaoDien();
+
+        // 5. Tự động kiểm tra và mở popup Đăng nhập / Đăng ký nick cho khách nếu chưa có tài khoản
+        this.kiemTraVaHienThiModalKhachHang();
     }
 
     /**
@@ -200,6 +203,9 @@ class ThucDonQrManager {
                                 <span>📞 Hotline: <strong>${window.DinhDang.thoatHtml(quan.hotline)}</strong></span>
                             </div>
                         </header>
+
+                        <!-- Thanh thông tin thành viên Khách Hàng -->
+                        ${this.taoThanhKhachHangHtml()}
 
                         <!-- 2. Thanh tìm kiếm & Bộ lọc khoảng giá (US-054) -->
                         <div class="khung-tim-kiem-emenu">
@@ -651,6 +657,261 @@ class ThucDonQrManager {
             console.error(loi);
             if (window.thongBao) window.thongBao.loi('Không thể gửi yêu cầu');
         }
+    }
+
+    // =========================================================================
+    // TÀI KHOẢN KHÁCH HÀNG (ĐĂNG KÝ / ĐĂNG NHẬP / TÍCH ĐIỂM / LỊCH SỬ ĐƠN)
+    // =========================================================================
+
+    taoThanhKhachHangHtml() {
+        const khach = window.api && window.api.layKhachHangHienTai ? window.api.layKhachHangHienTai() : null;
+
+        if (khach) {
+            const tenHienThi = khach.tenKhach || khach.soDienThoai;
+            return `
+                <div class="thanh-khach-hang-emenu thanh-khach-da-dang-nhap">
+                    <div class="trai-khach-info">
+                        <span class="icon-avatar-khach">👑</span>
+                        <div class="chu-khach-info">
+                            <div class="ten-khach-txt">Chào, <strong>${window.DinhDang.thoatHtml(tenHienThi)}</strong></div>
+                            <div class="sub-khach-txt">⭐ <strong>${khach.diemTichLuy || 0} điểm</strong> • Hạng ${window.DinhDang.thoatHtml(khach.hangThanhVien || 'Đồng')}</div>
+                        </div>
+                    </div>
+                    <div class="phai-khach-nut">
+                        <button type="button" class="btn-khach-mini btn-khach-lich-su" onclick="window.thucDonQr.moModalLichSuDonKhachHang()" title="Xem lịch sử đơn">
+                            📜 Lịch sử
+                        </button>
+                        <button type="button" class="btn-khach-mini btn-khach-doi-acc" onclick="window.thucDonQr.dangXuatVaMoModalKhach()" title="Đổi tài khoản khác">
+                            🔄 Đổi nick
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="thanh-khach-hang-emenu thanh-khach-chua-dang-nhap" onclick="window.thucDonQr.moModalXacThucKhachHang()">
+                    <div class="trai-khach-info">
+                        <span class="icon-avatar-khach">🎁</span>
+                        <div class="chu-khach-info">
+                            <div class="ten-khach-txt"><strong>Đăng ký / Đăng nhập thành viên</strong></div>
+                            <div class="sub-khach-txt">Nhận ngay 10 điểm thưởng & lưu lịch sử món ngon</div>
+                        </div>
+                    </div>
+                    <div class="phai-khach-nut">
+                        <button type="button" class="btn-khach-vao-nick">Vào nick ›</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    kiemTraVaHienThiModalKhachHang() {
+        const daDangNhap = window.api && window.api.layKhachHangHienTai ? window.api.layKhachHangHienTai() : null;
+        const daBoQua = sessionStorage.getItem('quanmoc_da_bo_qua_dang_ky_khach');
+        if (!daDangNhap && !daBoQua) {
+            setTimeout(() => {
+                this.moModalXacThucKhachHang();
+            }, 500);
+        }
+    }
+
+    moModalXacThucKhachHang() {
+        const khungModal = document.getElementById('khung-modal-toan-cuc');
+        if (!khungModal) return;
+
+        khungModal.innerHTML = `
+            <div class="hop-modal-lop-phu" onclick="if(event.target === this) window.thucDonQr.dongModal()">
+                <div class="hop-modal-noi-dung modal-xac-thuc-khach" style="background: #FFF; max-width: 420px; width: 90%; border-radius: 20px; padding: 26px 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); position: relative;">
+                    <button class="nut-dong-gio-hang" style="position: absolute; top: 16px; right: 16px;" onclick="window.thucDonQr.dongModal()">✕</button>
+                    
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <div style="font-size: 42px; margin-bottom: 8px;">🍽️</div>
+                        <h3 style="font-size: 19px; font-weight: 800; color: #78350F; margin: 0 0 6px;">Chào Mừng Quý Khách!</h3>
+                        <p style="font-size: 13px; color: var(--mau-chu-phu); margin: 0; line-height: 1.5;">
+                            Nhập <strong>Số điện thoại</strong> và <strong>Mật khẩu</strong> để tích điểm thưởng và xem lại các đơn đã đặt tại Quán Mộc.
+                        </p>
+                    </div>
+
+                    <div style="background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 12px; padding: 10px 14px; font-size: 12px; color: #92400E; margin-bottom: 16px; line-height: 1.5;">
+                        💡 <strong>Tự động nhận diện:</strong><br>
+                        • <strong>Lần đầu quét mã:</strong> Hệ thống sẽ <strong>tự động tạo nick mới</strong>.<br>
+                        • <strong>Lần sau quay lại:</strong> Chỉ cần nhập lại SĐT & Mật khẩu này để vào lại nick cũ!
+                    </div>
+
+                    <form onsubmit="window.thucDonQr.xuLyXacThucKhachHang(event)" style="display: flex; flex-direction: column; gap: 14px;">
+                        <div>
+                            <label style="display: block; font-size: 13px; font-weight: 700; color: #1F2937; margin-bottom: 6px;">
+                                📱 Số điện thoại (*):
+                            </label>
+                            <input type="tel" id="input-khach-sdt" placeholder="Ví dụ: 0901234567" required
+                                   style="width: 100%; padding: 12px 14px; border: 1.5px solid #D1D5DB; border-radius: 10px; font-size: 15px; font-weight: 600; outline: none; box-sizing: border-box;"
+                                   onfocus="this.style.borderColor='var(--mau-chinh)'" onblur="this.style.borderColor='#D1D5DB'">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 13px; font-weight: 700; color: #1F2937; margin-bottom: 6px;">
+                                🔒 Mật khẩu nick của bạn (*):
+                            </label>
+                            <input type="password" id="input-khach-matkhau" placeholder="Tự chọn mật khẩu (tối thiểu 4 ký tự)" required minlength="4"
+                                   style="width: 100%; padding: 12px 14px; border: 1.5px solid #D1D5DB; border-radius: 10px; font-size: 15px; outline: none; box-sizing: border-box;"
+                                   onfocus="this.style.borderColor='var(--mau-chinh)'" onblur="this.style.borderColor='#D1D5DB'">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 12.5px; font-weight: 600; color: #4B5563; margin-bottom: 6px;">
+                                👤 Tên quý khách (Tùy chọn):
+                            </label>
+                            <input type="text" id="input-khach-ten" placeholder="Ví dụ: Anh Quân, Chị Mai..."
+                                   style="width: 100%; padding: 10px 14px; border: 1.5px solid #E5E7EB; border-radius: 10px; font-size: 14px; outline: none; box-sizing: border-box;">
+                        </div>
+
+                        <div id="thong-bao-loi-xac-thuc-khach" style="display: none; background: #FEE2E2; color: #DC2626; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600;"></div>
+
+                        <button type="submit" id="nut-submit-khach" class="nut nut-chinh" style="padding: 13px; border-radius: 12px; font-size: 15px; font-weight: 700; width: 100%; margin-top: 4px;">
+                            🚀 Tiếp Tục Vào Thực Đơn
+                        </button>
+
+                        <button type="button" class="nut nut-phu" onclick="window.thucDonQr.boQuaXacThucKhachHang()" style="padding: 10px; border-radius: 10px; font-size: 13px; width: 100%;">
+                            Bỏ qua, tôi muốn xem menu trước
+                        </button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        khungModal.classList.add('mo');
+    }
+
+    async xuLyXacThucKhachHang(event) {
+        if (event) event.preventDefault();
+        const inputSdt = document.getElementById('input-khach-sdt');
+        const inputMatKhau = document.getElementById('input-khach-matkhau');
+        const inputTen = document.getElementById('input-khach-ten');
+        const elLoi = document.getElementById('thong-bao-loi-xac-thuc-khach');
+        const nutSubmit = document.getElementById('nut-submit-khach');
+
+        const sdt = inputSdt ? inputSdt.value.trim() : '';
+        const matKhau = inputMatKhau ? inputMatKhau.value.trim() : '';
+        const tenKhach = inputTen ? inputTen.value.trim() : '';
+
+        if (!sdt || sdt.length < 9) {
+            if (elLoi) { elLoi.style.display = 'block'; elLoi.innerText = 'Vui lòng nhập số điện thoại hợp lệ!'; }
+            return;
+        }
+
+        if (!matKhau || matKhau.length < 4) {
+            if (elLoi) { elLoi.style.display = 'block'; elLoi.innerText = 'Mật khẩu cần tối thiểu 4 ký tự!'; }
+            return;
+        }
+
+        if (nutSubmit) {
+            nutSubmit.disabled = true;
+            nutSubmit.innerText = '⏳ Đang kiểm tra nick...';
+        }
+
+        const kq = await window.api.xacThucKhachHang({ soDienThoai: sdt, matKhau, tenKhach });
+
+        if (kq && kq.ok && kq.data) {
+            this.dongModal();
+            if (window.thongBao) {
+                window.thongBao.thanhCong(
+                    kq.data.laTaiKhoanMoi ? 'Tạo nick thành công! 🎉' : 'Đăng nhập thành công! 👋',
+                    kq.msg || 'Chào mừng bạn đến với Quán Mộc!'
+                );
+            }
+            this.veGiaoDien();
+        } else {
+            if (elLoi) {
+                elLoi.style.display = 'block';
+                elLoi.innerText = kq ? kq.msg : 'Có lỗi khi xác thực tài khoản!';
+            }
+            if (nutSubmit) {
+                nutSubmit.disabled = false;
+                nutSubmit.innerText = '🚀 Tiếp Tục Vào Thực Đơn';
+            }
+        }
+    }
+
+    boQuaXacThucKhachHang() {
+        sessionStorage.setItem('quanmoc_da_bo_qua_dang_ky_khach', '1');
+        this.dongModal();
+    }
+
+    dangXuatVaMoModalKhach() {
+        if (window.api && window.api.dangXuatKhachHang) {
+            window.api.dangXuatKhachHang();
+        }
+        this.veGiaoDien();
+        this.moModalXacThucKhachHang();
+    }
+
+    async moModalLichSuDonKhachHang() {
+        const khach = window.api && window.api.layKhachHangHienTai ? window.api.layKhachHangHienTai() : null;
+        if (!khach) {
+            this.moModalXacThucKhachHang();
+            return;
+        }
+
+        const khungModal = document.getElementById('khung-modal-toan-cuc');
+        if (!khungModal) return;
+
+        let dsDon = [];
+        try {
+            const res = await window.api.layLichSuDonKhachHang(khach.soDienThoai);
+            if (res && res.ok && Array.isArray(res.data)) {
+                dsDon = res.data;
+            }
+        } catch (e) {}
+
+        khungModal.innerHTML = `
+            <div class="hop-modal-lop-phu" onclick="if(event.target === this) window.thucDonQr.dongModal()">
+                <div class="hop-modal-noi-dung" style="background:#FFF; max-width:440px; width:92%; border-radius:20px; padding:22px; max-height:85vh; overflow-y:auto; box-shadow:0 20px 40px rgba(0,0,0,0.25);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                        <div>
+                            <h3 style="margin:0; font-size:18px; color:#78350F;">📜 Lịch Sử Đơn Của Bạn</h3>
+                            <span style="font-size:12px; color:var(--mau-chu-phu);">Nick: <strong>${window.DinhDang.thoatHtml(khach.tenKhach || khach.soDienThoai)}</strong> (${khach.soDienThoai})</span>
+                        </div>
+                        <button class="nut-dong-gio-hang" onclick="window.thucDonQr.dongModal()">✕</button>
+                    </div>
+
+                    <div style="background:#FEF3C7; border:1px solid #FCD34D; border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:12.5px; display:flex; justify-content:space-between;">
+                        <span>⭐ Điểm tích lũy: <strong>${khach.diemTichLuy || 0} điểm</strong></span>
+                        <span>🏆 Hạng: <strong>${window.DinhDang.thoatHtml(khach.hangThanhVien || 'Đồng')}</strong></span>
+                    </div>
+
+                    ${dsDon.length === 0 ? `
+                        <div style="text-align:center; padding:30px 10px; color:var(--mau-chu-phu);">
+                            <div style="font-size:40px; margin-bottom:8px;">🍽️</div>
+                            <p style="font-size:14px; margin:0; font-weight:600;">Chưa có đơn hàng nào trước đây.</p>
+                            <small>Mỗi khi bạn đặt món bằng số điện thoại này, đơn sẽ được lưu lại đây!</small>
+                        </div>
+                    ` : dsDon.map((d, i) => `
+                        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:12px; margin-bottom:10px; font-size:13px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <strong>🏷️ ${d.maDon || 'Đơn #' + (i + 1)}</strong>
+                                <span style="color:#B85D19; font-weight:700;">${window.DinhDang.tienVnd(d.tongTien || d.tongTienDon || 0)}</span>
+                            </div>
+                            <div style="font-size:12px; color:var(--mau-chu-phu); margin-bottom:6px;">
+                                🪑 ${d.tenBan || 'Bàn ' + d.banId} • 🕒 ${d.thoiGianTaoVN || (d.thoiGianTao ? new Date(d.thoiGianTao).toLocaleString('vi-VN') : 'Mới đây')}
+                            </div>
+                            <div style="border-top:1px dashed #CBD5E1; padding-top:6px; font-size:12px;">
+                                ${(d.danhSachMon || []).map(m => `
+                                    <div style="display:flex; justify-content:space-between; color:#334155; margin-bottom:2px;">
+                                        <span>• ${window.DinhDang.thoatHtml(m.tenMon)} x${m.soLuong || 1}</span>
+                                        <span>${window.DinhDang.tienVnd(m.thanhTien || ((m.donGia || 0) * (m.soLuong || 1)))}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+
+                    <button class="nut nut-phu" onclick="window.thucDonQr.dongModal()" style="width:100%; margin-top:10px;">
+                        Đóng cửa sổ
+                    </button>
+                </div>
+            </div>
+        `;
+        khungModal.classList.add('mo');
     }
 
     dongModal() {
