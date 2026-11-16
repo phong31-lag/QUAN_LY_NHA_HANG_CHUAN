@@ -8,7 +8,7 @@
     "donViTinh": "Miếng",
     "hinhAnh": "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80",
     "moTa": "Gà rán truyền thống giòn rụm bên ngoài, thịt mềm ngọt mọng nước bên trong, chấm cùng sốt Gravy đậm đà đặc trưng Jollibee.",
-    "trangThai": "TamHet",
+    "trangThai": "DangBan",
     "laMonBanChay": true,
     "tuyChon": [],
     "tuyChonSize": [
@@ -28,7 +28,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 2,
@@ -39,7 +39,7 @@
     "donViTinh": "Phần",
     "hinhAnh": "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=600&auto=format&fit=crop&q=80",
     "moTa": "Phần 2 miếng gà rán da giòn rụm, thịt mọng nước, ăn kèm nước chấm sốt Gravy thơm lừng chuẩn vị Jollibee.",
-    "trangThai": "DangBan",
+    "trangThai": "TamHet",
     "laMonBanChay": true,
     "tuyChon": [],
     "tuyChonSize": [
@@ -59,7 +59,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 3,
@@ -90,7 +90,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 4,
@@ -101,7 +101,7 @@
     "donViTinh": "Dĩa",
     "hinhAnh": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&auto=format&fit=crop&q=80",
     "moTa": "Sợi mì Ý dai ngon đậm đà sốt cà chua ngọt truyền thống Jollibee, topping xúc xích cắt lát và phô mai sợi béo ngậy.",
-    "trangThai": "TamHet",
+    "trangThai": "DangBan",
     "laMonBanChay": true,
     "tuyChon": [],
     "tuyChonSize": [
@@ -121,7 +121,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 5,
@@ -152,7 +152,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 6,
@@ -179,7 +179,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 7,
@@ -206,7 +206,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 8,
@@ -237,7 +237,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 9,
@@ -268,7 +268,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 10,
@@ -294,7 +294,7 @@
     ],
     "tuyChonTopping": [],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 11,
@@ -321,7 +321,7 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   },
   {
     "id": 12,
@@ -352,6 +352,28 @@
       }
     ],
     "ngayTao": "2026-11-16T00:41:20.921Z",
-    "ngayCapNhat": "2026-11-16T00:54:49.226Z"
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
+  },
+  {
+    "id": 13,
+    "maMon": "MON-13",
+    "tenMon": "gà rán KFC",
+    "danhMucId": 1,
+    "giaBan": 30000,
+    "donViTinh": "Đĩa",
+    "hinhAnh": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80",
+    "moTa": "",
+    "trangThai": "DangBan",
+    "laMonBanChay": false,
+    "tuyChon": [],
+    "tuyChonSize": [
+      {
+        "ten": "Tiêu chuẩn",
+        "giaCongThem": 0
+      }
+    ],
+    "tuyChonTopping": [],
+    "ngayTao": "2026-11-16T02:24:04.066Z",
+    "ngayCapNhat": "2026-11-16T02:40:41.564Z"
   }
 ]

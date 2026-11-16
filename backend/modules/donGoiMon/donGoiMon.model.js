@@ -144,17 +144,19 @@ async function huyMon(itemId, lyDo = '') {
     for (const don of danhSachDonGoi) {
         const mon = (don.danhSachMon || []).find(m => (m.id && Number(m.id) === numId) || String(m.id) === String(itemId));
         if (mon) {
-            if (mon.trangThai !== 'CHO_XAC_NHAN') {
+            if (mon.trangThai !== 'CHO_XAC_NHAN' && mon.trangThai !== 'CHO_CHE_BIEN') {
                 const loi = new Error('Không thể hủy món vì bếp đã bắt đầu chế biến hoặc đã lên món');
                 loi.status = 400;
                 throw loi;
             }
             mon.trangThai = 'DA_HUY';
             mon.lyDoHuy = lyDo;
+            mon.thoiGianCapNhat = new Date();
             // Tính lại tổng tiền của đơn
             don.tongTienDon = don.danhSachMon
-                .filter(m => m.trangThai !== 'DA_HUY')
-                .reduce((tong, m) => tong + m.thanhTien, 0);
+                .filter(m => m.trangThai !== 'DA_HUY' && m.trangThai !== 'TU_CHOI')
+                .reduce((tong, m) => tong + (m.thanhTien || (m.donGia * (m.soLuong || 1))), 0);
+            don.tongTien = don.tongTienDon;
 
             luu();
             return { don, mon };

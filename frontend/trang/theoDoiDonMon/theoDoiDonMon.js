@@ -606,12 +606,13 @@ class TheoDoiDonMonModule {
      * Render từng món ăn kèm thanh Stepper tiến độ 4 bước (US-066) và nút Hủy món (US-068)
      */
     veDongMonAn(mon, don) {
-        const laChoXacNhan = mon.trangThai === 'CHO_XAC_NHAN';
-        const laDangNau = mon.trangThai === 'DANG_CHE_BIEN';
+        const laChoXacNhan = mon.trangThai === 'CHO_XAC_NHAN' || mon.trangThai === 'CHO_CHE_BIEN';
+        const laDangNau = mon.trangThai === 'DANG_CHE_BIEN' || mon.trangThai === 'DA_CHE_BIEN';
         const laDaXong = mon.trangThai === 'DA_XONG' || mon.trangThai === 'DA_NAU_XONG';
-        const laDaLenMon = mon.trangThai === 'DA_LEN_MON';
+        const laDaLenMon = mon.trangThai === 'DA_LEN_MON' || mon.trangThai === 'DA_PHUC_VU';
         const laDaHuy = mon.trangThai === 'DA_HUY';
         const laTuChoi = mon.trangThai === 'TU_CHOI';
+        const banId = don?.banId || this.banIdHienTai || 0;
 
         return `
             <div class="dong-mon-an-s2 ${laDaHuy || laTuChoi ? 'mon-bi-huy' : ''}">
@@ -683,7 +684,7 @@ class TheoDoiDonMonModule {
                     </div>
 
                     ${laChoXacNhan ? `
-                        <button type="button" class="nut-huy-mon-mini" onclick="window.theoDoiDonMonModule.xacNhanHuyMon(${mon.id}, '${mon.tenMon}')" title="Hủy món khi Bếp chưa nấu (US-068)">
+                        <button type="button" class="nut-huy-mon-mini" onclick="window.theoDoiDonMonModule.xacNhanHuyMon(${mon.id}, '${(mon.tenMon || '').replace(/'/g, "\\'")}', ${banId})" title="Hủy món khi Bếp chưa nấu (US-068)">
                             ❌ Hủy món này
                         </button>
                     ` : ''}
@@ -779,9 +780,10 @@ class TheoDoiDonMonModule {
     /**
      * US-068: Hộp thoại xác nhận hủy món khi còn chờ xác nhận
      */
-    xacNhanHuyMon(idMonChiTiet, tenMon) {
+    xacNhanHuyMon(idMonChiTiet, tenMon, banId) {
         const modal = document.getElementById('khung-modal-toan-cuc');
         if (!modal) return;
+        const bId = Number(banId || this.banIdHienTai || 0);
 
         modal.innerHTML = `
             <div class="hop-thoai-modal hop-thoai-xac-nhan" style="max-width: 440px;">
@@ -808,7 +810,7 @@ class TheoDoiDonMonModule {
                 </div>
                 <div class="duoi-modal">
                     <button type="button" class="nut nut-phu" onclick="window.theoDoiDonMonModule.dongModal()">Không hủy</button>
-                    <button type="button" class="nut nut-nguy-hiem" onclick="window.theoDoiDonMonModule.thucHienHuyMon(${idMonChiTiet})">
+                    <button type="button" class="nut nut-nguy-hiem" onclick="window.theoDoiDonMonModule.thucHienHuyMon(${idMonChiTiet}, ${bId})">
                         Xác nhận hủy món
                     </button>
                 </div>
@@ -817,21 +819,22 @@ class TheoDoiDonMonModule {
         modal.classList.add('mo');
     }
 
-    async thucHienHuyMon(idMonChiTiet) {
+    async thucHienHuyMon(idMonChiTiet, banId) {
         const select = document.getElementById('ly-do-huy-select');
         const lyDo = select ? select.value : 'Khách yêu cầu hủy';
+        const bId = Number(banId || this.banIdHienTai || 0);
 
-        const kq = await window.api.huyMonChuaCheBien(idMonChiTiet, this.banIdHienTai, lyDo);
+        const kq = await window.api.huyMonChuaCheBien(idMonChiTiet, bId, lyDo);
         this.dongModal();
 
         if (kq && kq.ok) {
             if (window.thongBao) {
                 window.thongBao.thanhCong('Hủy món thành công', kq.msg);
             }
-            this.taiDuLieuVaVe();
+            await this.taiDuLieuVaVe();
         } else {
             if (window.thongBao) {
-                window.thongBao.thatBai('Không thể hủy món', kq ? kq.msg : 'Có lỗi');
+                window.thongBao.thatBai('Không thể hủy món', kq ? kq.msg : 'Có lỗi xảy ra khi hủy món');
             }
         }
     }

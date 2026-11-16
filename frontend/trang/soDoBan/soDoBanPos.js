@@ -973,7 +973,7 @@ class SoDoBanPosModule {
         `;
     }
 
-    xacNhanHuyTraMon(banId, monId) {
+    async xacNhanHuyTraMon(banId, monId) {
         const loai = document.getElementById('loai-huy-tra')?.value || 'HUY';
         const lyDo = (document.getElementById('ly-do-huy-tra')?.value || '').trim();
 
@@ -990,14 +990,29 @@ class SoDoBanPosModule {
         if (mon) {
             mon.trangThai = 'DA_HUY';
             mon.lyDoHuy = lyDo;
+            if (!phien.danhSachMonDaXoa) {
+                phien.danhSachMonDaXoa = [];
+            }
+            if (!phien.danhSachMonDaXoa.includes(Number(monId))) {
+                phien.danhSachMonDaXoa.push(Number(monId));
+            }
             this.luuTatCaPhienBan(dsPhien);
+
+            // Đồng bộ trạng thái hủy món lên Backend Server
+            if (window.api && window.api.capNhatTrangThaiMonAn) {
+                try {
+                    await window.api.capNhatTrangThaiMonAn(mon.id, banId, 'DA_HUY');
+                } catch (e) {
+                    console.warn('Lỗi đồng bộ hủy món lên server:', e);
+                }
+            }
 
             // Ghi nhật ký thất thoát
             this.ghiNhatKyHuyTra(this.banDangChon || { id: banId, soBan: `Bàn ${banId}` }, mon.tenMon, mon.soLuong, loai, lyDo);
 
             if (window.thongBao) window.thongBao.canhBao('Đã hủy món', `Đã ghi nhận hủy món "${mon.tenMon}" và lưu nhật ký đối soát.`);
             this.moModalChiTietDon(banId);
-            this.taiVaHienThi();
+            await this.taiVaHienThi();
         }
     }
 

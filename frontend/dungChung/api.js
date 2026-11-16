@@ -2118,44 +2118,90 @@ class ApiService {
      * US-068: Khách hàng yêu cầu hủy món khi món vẫn đang ở trạng thái "Chờ xác nhận"
      */
     async huyMonChuaCheBien(idMonChiTiet, banId, lyDo = 'Khách đổi ý') {
-        const raw = localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_DON_GOI || 'quanmoc_ds_don_goi');
-        if (!raw) return { ok: false, msg: 'Không tìm thấy dữ liệu đơn hàng!' };
-
-        const dsDon = JSON.parse(raw);
         let daTimThay = false;
         let tenMonDaHuy = '';
 
-        for (const don of dsDon) {
-            if (Number(don.banId) === Number(banId)) {
-                const mon = don.danhSachMon.find(m => Number(m.id) === Number(idMonChiTiet));
-                if (mon) {
-                    if (mon.trangThai !== 'CHO_XAC_NHAN') {
-                        return { ok: false, msg: `Món [${mon.tenMon}] đã được Bếp chế biến hoặc phục vụ, không thể hủy!` };
-                    }
-                    mon.trangThai = 'DA_HUY';
-                    mon.lyDoHuy = lyDo;
-                    mon.thoiGianCapNhat = new Date().toISOString().replace('T', ' ').substring(0, 19);
-                    tenMonDaHuy = mon.tenMon;
-                    daTimThay = true;
-                    break;
+        // 1. Gửi API hủy món lên Backend Server
+        try {
+            const resServer = await this.yeuCau('/don-goi-mon/mon-an/' + encodeURIComponent(idMonChiTiet) + '/huy', {
+                method: 'POST',
+                body: { lyDo, banId: Number(banId) }
+            });
+            if (resServer && resServer.ok) {
+                daTimThay = true;
+                if (resServer.data && resServer.data.mon) {
+                    tenMonDaHuy = resServer.data.mon.tenMon || '';
                 }
+            } else if (resServer && !resServer.ok) {
+                return { ok: false, msg: resServer.msg || 'Không thể hủy món' };
+            }
+        } catch (err) {
+            console.warn('Lỗi gọi API hủy món lên Backend server:', err);
+            if (err && err.status === 400) {
+                return { ok: false, msg: err.message || 'Món đã được Bếp chế biến hoặc phục vụ, không thể hủy!' };
             }
         }
 
-        if (!daTimThay) {
-            return { ok: false, msg: 'Không tìm thấy món cần hủy!' };
+        // 2. Cập nhật và đồng bộ vào danh sách đơn gọi trong localStorage ('quanmoc_ds_don_goi')
+        const raw = localStorage.getItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_DON_GOI || 'quanmoc_ds_don_goi');
+        let dsDon = raw ? JSON.parse(raw) : [];
+
+        for (const don of dsDon) {
+            if (banId && don.banId && Number(don.banId) !== Number(banId)) continue;
+            const mon = (don.danhSachMon || []).find(m => 
+                (m.id && Number(m.id) === Number(idMonChiTiet)) || 
+                (m.id && String(m.id) === String(idMonChiTiet))
+            );
+            if (mon) {
+                mon.trangThai = 'DA_HUY';
+                mon.lyDoHuy = lyDo;
+                mon.thoiGianCapNhat = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                if (!tenMonDaHuy) tenMonDaHuy = mon.tenMon;
+                daTimThay = true;
+                break;
+            }
         }
 
-        localStorage.setItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_DON_GOI || 'quanmoc_ds_don_goi', JSON.stringify(dsDon));
+        if (raw && dsDon.length > 0) {
+            localStorage.setItem(window.HANG_SO?.KHOA_LUU_TRU?.DANH_SACH_DON_GOI || 'quanmoc_ds_don_goi', JSON.stringify(dsDon));
+        }
 
-        // US-076: Phát sự kiện cập nhật
+        // 3. Cập nhật đồng bộ phiên bàn POS ('quanmoc_pos_phien_ban') để POS không khôi phục lại món này
+        const rawPos = localStorage.getItem('quanmoc_pos_phien_ban');
+        if (rawPos) {
+            try {
+                const dsPhien = JSON.parse(rawPos);
+                const bId = Number(banId);
+                const phien = dsPhien[bId];
+                if (phien && Array.isArray(phien.danhSachMon)) {
+                    if (!phien.danhSachMonDaXoa) phien.danhSachMonDaXoa = [];
+                    if (!phien.danhSachMonDaXoa.includes(Number(idMonChiTiet))) {
+                        phien.danhSachMonDaXoa.push(Number(idMonChiTiet));
+                    }
+                    phien.danhSachMon.forEach(m => {
+                        if (Number(m.id) === Number(idMonChiTiet) || String(m.id) === String(idMonChiTiet)) {
+                            m.trangThai = 'DA_HUY';
+                            m.lyDoHuy = lyDo;
+                            if (!tenMonDaHuy) tenMonDaHuy = m.tenMon;
+                            daTimThay = true;
+                        }
+                    });
+                    localStorage.setItem('quanmoc_pos_phien_ban', JSON.stringify(dsPhien));
+                }
+            } catch (e) {}
+        }
+
+        // 4. Phát sự kiện Socket thời gian thực cho Bếp và POS
         if (window.socketClient) {
             window.socketClient.phatSuKien('order:capNhatTrangThai', { idMonChiTiet, banId, trangThai: 'DA_HUY', lyDo });
         }
 
-        this.ghiNhatKy(`Khách hủy món (${tenMonDaHuy})`, 'WARN', `Bàn ${banId} hủy món: ${tenMonDaHuy}. Lý do: ${lyDo}`);
+        this.ghiNhatKy(`Khách hủy món (${tenMonDaHuy || idMonChiTiet})`, 'WARN', `Bàn ${banId} hủy món: ${tenMonDaHuy || idMonChiTiet}. Lý do: ${lyDo}`);
 
-        return { ok: true, msg: `Đã hủy thành công món [${tenMonDaHuy}]. Tổng tiền đã được khấu trừ.` };
+        return { 
+            ok: true, 
+            msg: `Đã hủy thành công món [${tenMonDaHuy || 'đã chọn'}]. Tổng tiền đã được khấu trừ.` 
+        };
     }
 
     /**
